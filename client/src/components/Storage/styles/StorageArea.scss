@@ -1,0 +1,90 @@
+/* Scrollbar unsichtbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.blink {
+  animation: blink 0.8s infinite alternate;
+  background-color: rgba(255, 0, 0, 0.6);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+@keyframes blink {
+  from { background-color: rgba(255, 0, 0, 0.4); }
+  to   { background-color: rgba(255, 0, 0, 0.8); }
+}
+/* Warning Icon Animation */
+.warning-icon {
+  cursor: pointer;
+  animation: pulseRed 1s infinite;
+}
+
+@keyframes pulseRed {
+  0% { transform: scale(1); color: #ff4444; }
+  50% { transform: scale(1.2); color: #ff0000; }
+  100% { transform: scale(1); color: #ff4444; }
+}
+
+/* Warning Box */
+.warning-box {
+  background: rgba(255, 0, 0, 0.25);
+  border-left: 4px solid red;
+}
+
+/* Fade In */
+.fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Upgrade Card Look */
+.upgrade-card {
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(4px);
+}
+
+/* Box Design */
+.box {
+  background: #d2b48c;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.big-box {
+  height: 160px;
+}
+
+.box:hover {
+  transform: translateY(-4px);
+}
+
+.box-lid {
+  position: absolute;
+  top: 0;
+  height: 30%;
+  width: 100%;
+  background: #c19a6b;
+  border-radius: 6px 6px 0 0;
+  transform-origin: top;
+  transition: transform 0.3s ease;
+}
+
+.box:hover .box-lid {
+  transform: rotateX(70deg);
+}
+
+.box-body {
+  position: absolute;
+  bottom: 0;
+  height: 70%;
+  width: 100%;
+}

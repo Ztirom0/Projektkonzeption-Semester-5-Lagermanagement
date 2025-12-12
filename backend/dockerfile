@@ -1,0 +1,14 @@
+# Verwende ein leichtgewichtiges Java-Image
+FROM eclipse-temurin:17-jdk-jammy
+
+# Arbeitsverzeichnis im Container
+WORKDIR /app
+
+# Abhängigkeiten und Quellcode kopieren
+COPY target/*.jar app.jar
+
+# Port freigeben
+EXPOSE 8080
+
+# Anwendung starten
+ENTRYPOINT ["java", "-jar", "app.jar"]

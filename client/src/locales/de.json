@@ -1,0 +1,25 @@
+{
+  "home": {
+    "title": "Dummy Home",
+    "welcome": "Willkommen in deiner neuen Dummy-App.",
+    "toStorages": "Zu den Lagern",
+    "toProducts": "Zu den Produkten"
+  },
+  "storages": {
+    "title": "Dummy Storages",
+    "description": "Hier siehst du Dummy-Lagerdaten."
+  },
+  "products": {
+    "title": "Dummy Products",
+    "description": "Liste von Dummy-Produkten."
+  },
+  "alarms": {
+    "title": "Alarme",
+    "overflow" : "Lager überfüllt!",
+    "none": "Keine offenen Alarme"
+  },
+  "common": {
+    "back": "Zurück",
+    "loading": "Lade..."
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "home": {
+    "title": "Dummy Home",
+    "welcome": "Welcome to your new dummy app.",
+    "toStorages": "Go to Storages",
+    "toProducts": "Go to Products"
+  },
+  "storages": {
+    "title": "Dummy Storages",
+    "description": "Here you can see dummy storage data."
+  },
+  "products": {
+    "title": "Dummy Products",
+    "description": "List of dummy products."
+  },
+  "alarms": {
+    "title": "Alarms",
+    "overflow" : "Storage overflown!",
+    "none": "No open alarms"
+  },
+  "common": {
+    "back": "Back",
+    "loading": "Loading..."
+  }
+}
