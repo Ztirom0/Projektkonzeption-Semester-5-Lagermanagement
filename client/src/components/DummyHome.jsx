@@ -11,10 +11,12 @@ export default function DummyHome() {
   return (
     <div>
       {/* Navigation */}
+      <div className="d-flex"></div>
       <Navigation onNavigate={setView} />
 
       {/* Hauptbereich */}
-      <div className="container py-5">
+        <div className="flex-grow-1" style={{ marginLeft: "240px" }}>
+          <div className="container py-5"></div>
         {view === "overview" && (
           <div className="text-center">
             {/* Hero Section */}
