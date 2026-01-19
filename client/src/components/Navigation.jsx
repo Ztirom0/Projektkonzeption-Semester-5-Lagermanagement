@@ -15,6 +15,8 @@ export default function Navigation({ onNavigate }) {
 
       {/* Navigation Links */}
       <ul className="nav nav-pills flex-column mb-auto">
+
+        {/* Produkte */}
         <li className="nav-item border-bottom">
           <button
             className="nav-link text-white py-4 fs-2 w-100 text-start"
@@ -23,14 +25,18 @@ export default function Navigation({ onNavigate }) {
             🛒 Produkte
           </button>
         </li>
+
+        {/* Lager */}
         <li className="nav-item border-bottom">
           <button
             className="nav-link text-white py-4 fs-2 w-100 text-start"
-            onClick={() => onNavigate("storages")}
+            onClick={() => onNavigate("lager")}   // <-- WICHTIG: exakt "lager"
           >
             🏭 Lager
           </button>
         </li>
+
+        {/* Berichte */}
         <li className="nav-item border-bottom">
           <button
             className="nav-link text-white py-4 fs-2 w-100 text-start"
@@ -39,6 +45,7 @@ export default function Navigation({ onNavigate }) {
             📑 Berichte
           </button>
         </li>
+
       </ul>
 
       {/* User Bereich unten */}

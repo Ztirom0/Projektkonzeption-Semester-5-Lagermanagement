@@ -1,93 +1,103 @@
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import AlarmBell from "./AlarmBell";
-import DummyStorages from "./DummyStorages";
+import Navigation from "./Navigation";
 import DummyProducts from "./Products/DummyProducts";
-import Navigation from "./Navigation";  
+import Dummys from "./Lager/Dummys";   // <-- korrekt zu deinem Ordner
+import AlarmBell from "./AlarmBell";
 
 export default function DummyHome() {
   const [view, setView] = useState("overview");
 
   return (
-    <div>
-      {/* Navigation */}
-      <div className="d-flex"></div>
+    <div className="d-flex">
+      {/* Sidebar */}
       <Navigation onNavigate={setView} />
 
       {/* Hauptbereich */}
-        <div className="flex-grow-1" style={{ marginLeft: "240px" }}>
-          <div className="container py-5"></div>
-        {view === "overview" && (
-          <div className="text-center">
-            {/* Hero Section */}
-            <h1 className="display-4 fw-bold mb-3 animate__animated animate__fadeInDown">
-              DUMMY
-            </h1>
-            <p className="text-muted mb-5 animate__animated animate__fadeInUp">
-              Willkommen im Smart Inventory Dashboard – alles im Blick, alles unter Kontrolle.
-            </p>
+      <div className="flex-grow-1" style={{ marginLeft: "260px" }}>
+        <div className="container py-5">
 
-            {/* Animierte Cards für Navigation */}
-            <div className="row g-4 justify-content-center">
-              <div className="col-md-3">
-                <div
-                  className="card shadow-sm h-100 text-center border-0 hover-card animate__animated animate__zoomIn"
-                  onClick={() => setView("products")}
-                  style={{ cursor: "pointer" }}
-                >
-                  <div className="card-body">
-                    <h2 className="mb-3">🛒</h2>
-                    <h5 className="card-title">Produkte</h5>
-                    <p className="text-muted">Artikel verwalten und Bestände prüfen</p>
+          {/* ---------------- OVERVIEW ---------------- */}
+          {view === "overview" && (
+            <div className="text-center">
+              <h1 className="display-4 fw-bold mb-3">
+                Smart Inventory Dashboard
+              </h1>
+
+              <p className="text-muted mb-5">
+                Willkommen im Smart Inventory Dashboard – alles im Blick, alles unter Kontrolle.
+              </p>
+
+              <div className="row g-4 justify-content-center">
+
+                {/* Produkte */}
+                <div className="col-md-3">
+                  <div
+                    className="card shadow-sm h-100 text-center border-0 hover-card"
+                    onClick={() => setView("products")}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <div className="card-body">
+                      <h2 className="mb-3">🛒</h2>
+                      <h5 className="card-title">Produkte</h5>
+                      <p className="text-muted">Artikel verwalten und Bestände prüfen</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="col-md-3">
-                <div
-                  className="card shadow-sm h-100 text-center border-0 hover-card animate__animated animate__zoomIn animate__delay-1s"
-                  onClick={() => setView("storages")}
-                  style={{ cursor: "pointer" }}
-                >
-                  <div className="card-body">
-                    <h2 className="mb-3">🏭</h2>
-                    <h5 className="card-title">Lager</h5>
-                    <p className="text-muted">Standorte und Lagerbestände im Überblick</p>
+                {/* Lager */}
+                <div className="col-md-3">
+                  <div
+                    className="card shadow-sm h-100 text-center border-0 hover-card"
+                    onClick={() => setView("lager")}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <div className="card-body">
+                      <h2 className="mb-3">📦</h2>
+                      <h5 className="card-title">Lager</h5>
+                      <p className="text-muted">Standorte, Zonen & Lagerplätze verwalten</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="col-md-3">
-                <div
-                  className="card shadow-sm h-100 text-center border-0 hover-card animate__animated animate__zoomIn animate__delay-2s"
-                  onClick={() => setView("reports")}
-                  style={{ cursor: "pointer" }}
-                >
-                  <div className="card-body">
-                    <h2 className="mb-3">📑</h2>
-                    <h5 className="card-title">Berichte</h5>
-                    <p className="text-muted">Analysen und Auswertungen deiner Bestände</p>
+                {/* Berichte */}
+                <div className="col-md-3">
+                  <div
+                    className="card shadow-sm h-100 text-center border-0 hover-card"
+                    onClick={() => setView("reports")}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <div className="card-body">
+                      <h2 className="mb-3">📑</h2>
+                      <h5 className="card-title">Berichte</h5>
+                      <p className="text-muted">Analysen und Auswertungen deiner Bestände</p>
+                    </div>
                   </div>
                 </div>
+
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {view === "products" && <DummyProducts onBack={() => setView("overview")} />}
-        {view === "storages" && <DummyStorages onBack={() => setView("overview")} />}
-        {view === "reports" && (
-          <div className="text-center">
-            <h1 className="mb-3">📑 Berichte</h1>
-            <p className="text-muted">Hier kommen deine Auswertungen…</p>
-          </div>
-        )}
+          {/* ---------------- PRODUCTS ---------------- */}
+          {view === "products" && (
+            <DummyProducts onBack={() => setView("overview")} />
+          )}
+
+          {/* ---------------- LAGER ---------------- */}
+          {view === "lager" && (
+            <Dummys onBack={() => setView("overview")} />
+          )}
+
+          {/* ---------------- REPORTS ---------------- */}
+          {view === "reports" && (
+            <div className="text-center">
+              <h1 className="mb-3">📑 Berichte</h1>
+              <p className="text-muted">Hier kommen deine Auswertungen…</p>
+            </div>
+          )}
+
+        </div>
       </div>
     </div>
   );
 }
-
-  {/* Optional: AlarmBell direkt unter der Navigation 
-      <div className="container py-3">
-        <AlarmBell />
-      </div> */}
