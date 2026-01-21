@@ -14,8 +14,10 @@ public class Zone {
 
     private String name;
 
-    @Column(name = "category_id")
+    @ManyToOne
+    @JoinColumn(name = "category_id")
     private ZoneCategory category;
+
 
     @ManyToOne
     @JoinColumn(name = "storage_type_id")
