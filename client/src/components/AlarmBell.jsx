@@ -1,47 +1,38 @@
-import { useState } from "react";
-import { useAlarms } from "../context/AlarmContext";
-import i18n from "../i18n";
+// src/components/AlarmBell.jsx
 
-export default function AlarmBell() {
-  const { alarms } = useAlarms();
-  const [open, setOpen] = useState(false);
+import { useEffect, useState } from "react";
+import { fetchAlerts } from "./Lager/storageDummyData";
+
+export default function AlarmBell({ onOpen }) {
+  const [alerts, setAlerts] = useState([]);
+
+  useEffect(() => {
+    const load = async () => {
+      const data = await fetchAlerts();
+      setAlerts(data);
+    };
+
+    load();
+    const interval = setInterval(load, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const count = alerts.length;
 
   return (
-    <div className="position-relative mb-3">
-      <button
-        className="btn btn-outline-secondary position-relative"
-        onClick={() => setOpen((o) => !o)}
-      >
-        🔔
-        {alarms.length > 0 && (
-          <span className="badge bg-danger position-absolute top-0 start-100 translate-middle">
-            {alarms.length}
-          </span>
-        )}
-      </button>
-
-      {open && (
-        <div
-          className="card position-absolute end-0 mt-2 shadow"
-          style={{ minWidth: "260px", zIndex: 200 }}
+    <button
+      className="btn position-relative"
+      onClick={onOpen}
+      style={{ fontSize: "1.6rem" }}
+    >
+      🔔
+      {count > 0 && (
+        <span
+          className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
         >
-          <div className="card-body p-2">
-            <h6 className="mb-2">📋 {i18n.t("alarms.title")}</h6>
-
-            {alarms.length === 0 ? (
-              <p className="text-muted">{i18n.t("alarms.none")}</p>
-            ) : (
-              <ul className="list-group">
-                {alarms.map((a) => (
-                  <li key={a.id} className="list-group-item">
-                    {a.message}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
+          {count}
+        </span>
       )}
-    </div>
+    </button>
   );
 }
