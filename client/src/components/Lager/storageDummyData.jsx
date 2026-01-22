@@ -103,11 +103,11 @@ initLocationData();
 
 // Status
 export function isItemCritical(item) {
-  return item.quantity <= item.minQuantity;
+  return item.quantity < item.minQuantity;
 }
 
 // ---------------------------------------------------------
-// LAGERORT ANLEGEN (für AddLocationModal)
+// LAGERORT ANLEGEN
 // ---------------------------------------------------------
 export function addLocation(name) {
   const newLocation = {
@@ -123,26 +123,22 @@ export function addLocation(name) {
 }
 
 // ---------------------------------------------------------
-// LAGERTYP ZUWEISEN (für AssignStorageTypeModal)
+// LAGERTYP ZUWEISEN
 // ---------------------------------------------------------
 export function assignStorageTypeToLocation(locationId, typeId) {
   const loc = locations.find((l) => l.id === locationId);
   if (!loc) return null;
 
-  // Typ hinzufügen, falls nicht vorhanden
   if (!loc.storageTypes.includes(typeId)) {
     loc.storageTypes.push(typeId);
   }
 
-  // Zonen für diesen Typ existieren bereits?
   const alreadyExists = loc.zones.some((z) => z.storageTypeId === typeId);
   if (alreadyExists) return typeId;
 
-  // Template laden
   const tmpl = storageTypeTemplates[typeId];
   if (!tmpl) return null;
 
-  // Zonen aus Template hinzufügen
   tmpl.zones.forEach((zone) => {
     const newZone = {
       id: Date.now() + Math.random(),
@@ -172,8 +168,8 @@ export function addItemToLocation(locationId, placeId, productId, quantity, minQ
     id: Date.now() + Math.random(),
     placeId,
     productId,
-    quantity,
-    minQuantity
+    quantity: Number(quantity),
+    minQuantity: Number(minQuantity)
   };
 
   loc.items.push(newItem);
@@ -210,9 +206,32 @@ export function addPlace(locationId, zoneId, code, capacity) {
   const newPlace = {
     id: Date.now() + Math.random(),
     code,
-    capacity
+    capacity: Number(capacity)
   };
 
   zone.places.push(newPlace);
   return newPlace;
+}
+
+// ---------------------------------------------------------
+// ALERTS API MOCK – dynamisch aus Lagerdaten
+// ---------------------------------------------------------
+export async function fetchAlerts() {
+  const alerts = [];
+
+  locations.forEach((loc) => {
+    loc.items.forEach((item) => {
+      if (item.quantity < item.minQuantity) {
+        alerts.push({
+          itemId: item.productId,
+          placeId: item.placeId,
+          quantity: item.quantity,
+          minQuantity: item.minQuantity,
+          alert: "Unterschreitung"
+        });
+      }
+    });
+  });
+
+  return alerts;
 }
