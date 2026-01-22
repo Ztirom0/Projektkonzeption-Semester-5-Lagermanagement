@@ -44,6 +44,9 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
+
+      
+
   ###################################################
   # Service: backend
   # 
@@ -113,7 +116,8 @@ services:
     labels:
       traefik.http.routers.client.rule: Host(`localhost`)
       traefik.http.services.client.loadbalancer.server.port: 5173
-
+    ports:
+    - "5173:5173"
 
   ###################################################
   # Service: mysql
