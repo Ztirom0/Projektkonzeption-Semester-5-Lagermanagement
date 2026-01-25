@@ -1,13 +1,12 @@
 // src/components/Lager/StorageTable.jsx
 
-import { zoneCategories } from "./storageDummyData";
-
 export default function StorageTable({
   selectedLocation,
   zones,
   selectedStorageTypeId,
   selectedZoneId,
-  setSelectedZoneId
+  setSelectedZoneId,
+  zoneCategories
 }) {
   const getCategoryName = (id) =>
     zoneCategories.find((c) => c.id === id)?.name ?? "-";
@@ -38,7 +37,7 @@ export default function StorageTable({
               >
                 <td>{zone.name}</td>
                 <td>{getCategoryName(zone.categoryId)}</td>
-                <td>{zone.places.length}</td>
+                <td>{zone.places?.length ?? 0}</td>
               </tr>
             ))}
 

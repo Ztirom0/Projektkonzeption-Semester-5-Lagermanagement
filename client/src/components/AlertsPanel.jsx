@@ -29,11 +29,8 @@ export default function AlertsPanel({ alerts, onClose }) {
                 <tr key={idx}>
                   <td>{a.itemId}</td>
 
-                  {/* Platz-ID: volle Länge, aber schön umbrechbar */}
                   <td>
-                    <span className="place-id">
-                      {a.placeId}
-                    </span>
+                    <span className="place-id">{a.placeId}</span>
                   </td>
 
                   <td>{a.quantity}</td>

@@ -1,4 +1,6 @@
-import { useState, useMemo } from "react";
+// src/components/Lager/Dummys.jsx
+
+import { useEffect, useMemo, useState } from "react";
 
 import StorageStats from "./StorageStats";
 import StorageToolbar from "./StorageToolbar";
@@ -12,50 +14,30 @@ import EditPlaceModal from "./EditPlaceModal";
 import AssignProductToStorageModal from "./AssignProductToStorageModal";
 
 import CenteredModal from "../UI/CenteredModal";
-import { locations } from "./storageDummyData";
+
+import {
+  getLocations,
+  getStorageTypes,
+  getZoneCategories,
+  getZonesByStorageType
+} from "../../api/storageApi";
+import { getInventory } from "../../api/inventoryApi";
 
 export default function Dummys() {
-  const [selectedLocationId, setSelectedLocationId] = useState(
-    locations[0]?.id ?? null
-  );
+  const [locations, setLocations] = useState([]);
+  const [storageTypes, setStorageTypes] = useState([]);
+  const [zoneCategories, setZoneCategories] = useState([]);
+  const [zonesByStorageTypeId, setZonesByStorageTypeId] = useState({});
+  const [inventory, setInventory] = useState([]);
 
-  const selectedLocation = useMemo(
-    () => locations.find((l) => l.id === selectedLocationId),
-    [selectedLocationId]
-  );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const [selectedStorageTypeId, setSelectedStorageTypeId] = useState(
-    selectedLocation?.storageTypes[0] ?? null
-  );
-
-  const zones = useMemo(() => {
-    if (!selectedLocation || !selectedStorageTypeId) return [];
-    return selectedLocation.zones.filter(
-      (z) => z.storageTypeId === selectedStorageTypeId
-    );
-  }, [selectedLocation, selectedStorageTypeId]);
-
-  // ausgewählte Zone (für Artikel zuweisen, Zone/Platz anlegen)
+  const [selectedLocationId, setSelectedLocationId] = useState(null);
+  const [selectedStorageTypeId, setSelectedStorageTypeId] = useState(null);
   const [selectedZoneId, setSelectedZoneId] = useState(null);
-
-  const allPlaces = useMemo(
-    () =>
-      zones.flatMap((z) =>
-        z.places.map((p) => ({
-          ...p,
-          zoneId: z.id,
-          zoneName: z.name
-        }))
-      ),
-    [zones]
-  );
-
-  const items = selectedLocation?.items ?? [];
-
-  // Platz-Highlighting (wie bei Zonen)
   const [selectedPlaceId, setSelectedPlaceId] = useState(null);
 
-  // Modals
   const [showAssignProduct, setShowAssignProduct] = useState(false);
   const [showFunctions, setShowFunctions] = useState(false);
 
@@ -65,51 +47,231 @@ export default function Dummys() {
   const [showEditPlace, setShowEditPlace] = useState(false);
   const [placeToEdit, setPlaceToEdit] = useState(null);
 
+  // Initial laden
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [locRes, typeRes, catRes, invRes] = await Promise.all([
+          getLocations(),
+          getStorageTypes(),
+          getZoneCategories(),
+          getInventory()
+        ]);
+
+        setLocations(locRes);
+        setStorageTypes(typeRes);
+        setZoneCategories(catRes);
+        setInventory(invRes);
+
+        const firstLocation = locRes[0] ?? null;
+        const firstStorageTypeId =
+          firstLocation?.storageTypes?.[0]?.id ??
+          firstLocation?.storageTypes?.[0] ??
+          null;
+
+        setSelectedLocationId(firstLocation?.id ?? null);
+        setSelectedStorageTypeId(firstStorageTypeId ?? null);
+
+        if (firstStorageTypeId) {
+          const zones = await getZonesByStorageType(firstStorageTypeId);
+          setZonesByStorageTypeId((prev) => ({
+            ...prev,
+            [firstStorageTypeId]: zones
+          }));
+        }
+      } catch (err) {
+        console.error(err);
+        setError("Fehler beim Laden der Lagerdaten");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
+  const selectedLocation = useMemo(
+    () => locations.find((l) => l.id === selectedLocationId) ?? null,
+    [locations, selectedLocationId]
+  );
+
+  const zones = useMemo(() => {
+    if (!selectedStorageTypeId) return [];
+    return zonesByStorageTypeId[selectedStorageTypeId] ?? [];
+  }, [zonesByStorageTypeId, selectedStorageTypeId]);
+
+  const allPlaces = useMemo(
+    () =>
+      zones.flatMap((z) =>
+        (z.places ?? []).map((p) => ({
+          ...p,
+          zoneId: z.id,
+          zoneName: z.name
+        }))
+      ),
+    [zones]
+  );
+
+  const itemsForPlaces = useMemo(() => {
+    const placeIds = new Set(allPlaces.map((p) => p.id));
+    return inventory.filter((inv) => placeIds.has(inv.placeId));
+  }, [inventory, allPlaces]);
+
+  const stats = useMemo(() => {
+    const locationCount = locations.length;
+    const storageTypeCount = locations.reduce(
+      (s, l) => s + (l.storageTypes?.length ?? 0),
+      0
+    );
+    const zoneCount = Object.values(zonesByStorageTypeId).reduce(
+      (s, arr) => s + arr.length,
+      0
+    );
+    const placeCount = Object.values(zonesByStorageTypeId).reduce(
+      (s, arr) =>
+        s +
+        arr.reduce((a, z) => a + (z.places?.length ?? 0), 0),
+      0
+    );
+    const itemCount = inventory.length;
+    const criticalCount = inventory.filter(
+      (i) => i.quantity <= i.minQuantity
+    ).length;
+
+    return {
+      locationCount,
+      storageTypeCount,
+      zoneCount,
+      placeCount,
+      itemCount,
+      criticalCount
+    };
+  }, [locations, zonesByStorageTypeId, inventory]);
+
+  const handleSelectLocation = async (id) => {
+    setSelectedLocationId(id);
+    setSelectedZoneId(null);
+    setSelectedPlaceId(null);
+
+    const loc = locations.find((l) => l.id === id);
+    const firstTypeId =
+      loc?.storageTypes?.[0]?.id ?? loc?.storageTypes?.[0] ?? null;
+
+    setSelectedStorageTypeId(firstTypeId ?? null);
+
+    if (firstTypeId && !zonesByStorageTypeId[firstTypeId]) {
+      const zones = await getZonesByStorageType(firstTypeId);
+      setZonesByStorageTypeId((prev) => ({
+        ...prev,
+        [firstTypeId]: zones
+      }));
+    }
+  };
+
+  const handleSelectStorageType = async (typeId) => {
+    setSelectedStorageTypeId(typeId);
+    setSelectedZoneId(null);
+    setSelectedPlaceId(null);
+
+    if (typeId && !zonesByStorageTypeId[typeId]) {
+      const zones = await getZonesByStorageType(typeId);
+      setZonesByStorageTypeId((prev) => ({
+        ...prev,
+        [typeId]: zones
+      }));
+    }
+  };
+
+  const handleLocationCreated = (newLocation) => {
+    setLocations((prev) => [...prev, newLocation]);
+  };
+
+  const handleStorageTypeAssigned = async (locationId, storageTypeId) => {
+    setLocations((prev) =>
+      prev.map((l) =>
+        l.id === locationId
+          ? {
+              ...l,
+              storageTypes: [
+                ...(l.storageTypes ?? []),
+                storageTypeId
+              ]
+            }
+          : l
+      )
+    );
+
+    if (!zonesByStorageTypeId[storageTypeId]) {
+      const zones = await getZonesByStorageType(storageTypeId);
+      setZonesByStorageTypeId((prev) => ({
+        ...prev,
+        [storageTypeId]: zones
+      }));
+    }
+  };
+
+  const handleZoneCreated = (storageTypeId, newZone) => {
+    setZonesByStorageTypeId((prev) => ({
+      ...prev,
+      [storageTypeId]: [...(prev[storageTypeId] ?? []), newZone]
+    }));
+  };
+
+  const handlePlaceCreated = (zoneId, newPlace) => {
+    setZonesByStorageTypeId((prev) => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach((key) => {
+        updated[key] = updated[key].map((z) =>
+          z.id === zoneId
+            ? { ...z, places: [...(z.places ?? []), newPlace] }
+            : z
+        );
+      });
+      return updated;
+    });
+  };
+
+  const handleInventoryAssigned = (newEntry) => {
+    setInventory((prev) => [...prev, newEntry]);
+  };
+
+  if (loading) {
+    return (
+      <div className="container py-4">
+        <h1 className="mb-3">Lager</h1>
+        <div>Lade Lagerdaten…</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container py-4">
+        <h1 className="mb-3">Lager</h1>
+        <div className="alert alert-danger">{error}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="container py-4">
-      {/* Kopf-Statistiken */}
-      <StorageStats
-        stats={{
-          locationCount: locations.length,
-          storageTypeCount: locations.reduce((s, l) => s + l.storageTypes.length, 0),
-          zoneCount: locations.reduce((s, l) => s + l.zones.length, 0),
-          placeCount: locations.reduce(
-            (s, l) => s + l.zones.reduce((a, z) => a + z.places.length, 0),
-            0
-          ),
-          itemCount: locations.reduce((s, l) => s + l.items.length, 0),
-          criticalCount: locations.reduce(
-            (s, l) =>
-              s +
-              l.items.filter((i) => i.quantity <= i.minQuantity).length,
-            0
-          )
-        }}
-      />
+      <StorageStats stats={stats} />
 
-      {/* Toolbar + Buttons */}
       <div className="card shadow-sm mb-3">
         <div className="card-body">
           <StorageToolbar
             locations={locations}
+            storageTypes={storageTypes}
             selectedLocationId={selectedLocationId}
-            setSelectedLocationId={(id) => {
-              setSelectedLocationId(id);
-              // beim Wechsel Lagerort: Zone & Platz zurücksetzen
-              setSelectedZoneId(null);
-              setSelectedPlaceId(null);
-            }}
+            setSelectedLocationId={handleSelectLocation}
             selectedStorageTypeId={selectedStorageTypeId}
-            setSelectedStorageTypeId={(typeId) => {
-              setSelectedStorageTypeId(typeId);
-              // beim Wechsel Lagertyp: Zone & Platz zurücksetzen
-              setSelectedZoneId(null);
-              setSelectedPlaceId(null);
-            }}
+            setSelectedStorageTypeId={handleSelectStorageType}
           />
 
           <div className="d-flex justify-content-end gap-2 mt-3">
-            {/* Bestehender Button: Artikel zuweisen */}
             <button
               className="btn btn-primary"
               onClick={() => setShowAssignProduct(true)}
@@ -118,7 +280,6 @@ export default function Dummys() {
               Artikel zuweisen
             </button>
 
-            {/* Neuer Button: Funktionen */}
             <button
               className="btn btn-dark"
               onClick={() => setShowFunctions(true)}
@@ -129,7 +290,6 @@ export default function Dummys() {
         </div>
       </div>
 
-      {/* Struktur & Plätze */}
       <div className="row g-4 mt-1">
         <div className="col-md-5">
           <StorageTable
@@ -139,8 +299,9 @@ export default function Dummys() {
             selectedZoneId={selectedZoneId}
             setSelectedZoneId={(zoneId) => {
               setSelectedZoneId(zoneId);
-              setSelectedPlaceId(null); // beim Zonenwechsel Platz-Highlight zurücksetzen
+              setSelectedPlaceId(null);
             }}
+            zoneCategories={zoneCategories}
           />
         </div>
 
@@ -149,27 +310,29 @@ export default function Dummys() {
             selectedLocation={selectedLocation}
             zones={zones}
             allPlaces={allPlaces}
-            items={items}
+            items={itemsForPlaces}
             selectedPlaceId={selectedPlaceId}
             setSelectedPlaceId={setSelectedPlaceId}
           />
         </div>
       </div>
 
-      {/* Artikel zuweisen Modal */}
       {showAssignProduct && selectedLocation && (
         <AssignProductToStorageModal
           selectedLocation={selectedLocation}
+          zones={zones}
           selectedZoneId={selectedZoneId}
+          onAssigned={handleInventoryAssigned}
           onClose={() => setShowAssignProduct(false)}
         />
       )}
 
-      {/* FUNKTIONEN-POPUP */}
       {showFunctions && (
-        <CenteredModal title="Funktionen" onClose={() => setShowFunctions(false)}>
+        <CenteredModal
+          title="Funktionen"
+          onClose={() => setShowFunctions(false)}
+        >
           <div className="d-grid gap-3">
-            {/* Lagerort anlegen – braucht keinen Kontext */}
             <button
               className="btn btn-outline-primary"
               onClick={() => {
@@ -180,7 +343,6 @@ export default function Dummys() {
               Lagerort anlegen
             </button>
 
-            {/* Lagertyp anlegen – braucht ausgewählten Lagerort */}
             <button
               className="btn btn-outline-secondary"
               disabled={!selectedLocation}
@@ -193,7 +355,6 @@ export default function Dummys() {
               Lagertyp anlegen
             </button>
 
-            {/* Zone anlegen – braucht Lagerort + Lagertyp */}
             <button
               className="btn btn-outline-success"
               disabled={!selectedLocation || !selectedStorageTypeId}
@@ -206,7 +367,6 @@ export default function Dummys() {
               Zone anlegen
             </button>
 
-            {/* Platz anlegen – braucht ausgewählte Zone */}
             <button
               className="btn btn-outline-warning"
               disabled={!selectedLocation || !selectedZoneId}
@@ -223,34 +383,38 @@ export default function Dummys() {
         </CenteredModal>
       )}
 
-      {/* LAGERORT ANLEGEN */}
       {showAddLocation && (
-        <AddLocationModal onClose={() => setShowAddLocation(false)} />
+        <AddLocationModal
+          onCreated={handleLocationCreated}
+          onClose={() => setShowAddLocation(false)}
+        />
       )}
 
-      {/* LAGERTYP ANLEGEN */}
       {showAssignType && selectedLocation && (
         <AssignStorageTypeModal
           location={selectedLocation}
+          storageTypes={storageTypes}
+          onAssigned={handleStorageTypeAssigned}
           onClose={() => setShowAssignType(false)}
         />
       )}
 
-      {/* ZONE ANLEGEN */}
       {showAddZone && selectedLocation && (
         <AddZoneModal
           locationId={selectedLocation.id}
           storageTypeId={selectedStorageTypeId}
+          zoneCategories={zoneCategories}
+          onCreated={handleZoneCreated}
           onClose={() => setShowAddZone(false)}
         />
       )}
 
-      {/* PLATZ ANLEGEN / BEARBEITEN */}
       {showEditPlace && selectedLocation && (
         <EditPlaceModal
           locationId={selectedLocation.id}
           zoneId={selectedZoneId}
           place={placeToEdit}
+          onCreated={handlePlaceCreated}
           onClose={() => setShowEditPlace(false)}
         />
       )}

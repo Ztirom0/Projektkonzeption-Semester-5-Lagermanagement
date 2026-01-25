@@ -13,13 +13,11 @@ import {
   Legend
 } from "chart.js";
 
-import {
-  fetchSales,
-  fetchForecast,
-  fetchRecommendations
-} from "./analyticsDummyData";
+import { getSales } from "../../api/salesApi";
+import { getForecast } from "../../api/forecastApi";
+import { getRecommendations } from "../../api/recommendationsApi";
 
-import { locations } from "../Lager/storageDummyData";
+import { getInventory } from "../../api/inventoryApi";
 
 ChartJS.register(
   LineElement,
@@ -36,29 +34,35 @@ export default function ReportsDashboard({ onBack }) {
   const [forecast, setForecast] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
   const [selectedItemId, setSelectedItemId] = useState(null);
-
-  // Echte Artikel-IDs aus dem Lager
-  const realItemIds = Array.from(
-    new Set(
-      locations.flatMap((loc) => loc.items.map((i) => i.productId))
-    )
-  );
+  const [realItemIds, setRealItemIds] = useState([]);
 
   // INITIAL LOAD
   useEffect(() => {
     const load = async () => {
-      const s = await fetchSales();
-      setSales(s);
+      try {
+        // 1. Verkaufsdaten
+        const s = await getSales();
+        setSales(s);
 
-      const recs = await fetchRecommendations();
-      setRecommendations(recs);
+        // 2. Empfehlungen
+        const recs = await getRecommendations();
+        setRecommendations(recs);
 
-      const firstId = realItemIds[0];
-      setSelectedItemId(firstId);
+        // 3. Echte Artikel aus Inventory
+        const inv = await getInventory();
+        const ids = Array.from(new Set(inv.map((i) => i.itemId)));
+        setRealItemIds(ids);
 
-      if (firstId) {
-        const fc = await fetchForecast(firstId);
-        setForecast(fc);
+        const firstId = ids[0] ?? null;
+        setSelectedItemId(firstId);
+
+        // 4. Forecast für ersten Artikel
+        if (firstId) {
+          const fc = await getForecast(firstId);
+          setForecast(fc);
+        }
+      } catch (err) {
+        console.error("Fehler beim Laden der Reports:", err);
       }
     };
 
@@ -69,8 +73,12 @@ export default function ReportsDashboard({ onBack }) {
   useEffect(() => {
     const updateForecast = async () => {
       if (!selectedItemId) return;
-      const fc = await fetchForecast(selectedItemId);
-      setForecast(fc);
+      try {
+        const fc = await getForecast(selectedItemId);
+        setForecast(fc);
+      } catch (err) {
+        console.error("Fehler beim Laden der Prognose:", err);
+      }
     };
 
     updateForecast();
@@ -80,9 +88,7 @@ export default function ReportsDashboard({ onBack }) {
   const uniqueDates = Array.from(new Set(sales.map((s) => s.date))).sort();
 
   // Nur echte Artikel
-  const uniqueItems = Array.from(
-    new Set(sales.map((s) => s.itemId))
-  ).sort();
+  const uniqueItems = Array.from(new Set(sales.map((s) => s.itemId))).sort();
 
   // LineChart: Verkäufe pro Artikel
   const salesDatasets = uniqueItems.map((itemId, idx) => {
