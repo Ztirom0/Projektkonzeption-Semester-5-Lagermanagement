@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Set;
+import java.time.LocalDate;
 
 @Component
 public class WarehouseInitializer implements ApplicationRunner {
@@ -19,22 +20,26 @@ public class WarehouseInitializer implements ApplicationRunner {
     private final ZoneRepository zoneRepository;
     private final PlaceRepository placeRepository;
     private final InventoryRepository inventoryRepository;
+    private final SaleRepository saleRepository;
 
     public WarehouseInitializer(ItemRepository itemRepository,
-                                LocationRepository locationRepository,
-                                StorageTypeRepository storageTypeRepository,
-                                ZoneCategoryRepository zoneCategoryRepository,
-                                ZoneRepository zoneRepository,
-                                PlaceRepository placeRepository,
-                                InventoryRepository inventoryRepository) {
-        this.itemRepository = itemRepository;
-        this.locationRepository = locationRepository;
-        this.storageTypeRepository = storageTypeRepository;
-        this.zoneCategoryRepository = zoneCategoryRepository;
-        this.zoneRepository = zoneRepository;
-        this.placeRepository = placeRepository;
-        this.inventoryRepository = inventoryRepository;
-    }
+                            LocationRepository locationRepository,
+                            StorageTypeRepository storageTypeRepository,
+                            ZoneCategoryRepository zoneCategoryRepository,
+                            ZoneRepository zoneRepository,
+                            PlaceRepository placeRepository,
+                            InventoryRepository inventoryRepository,
+                            SaleRepository saleRepository) {
+    this.itemRepository = itemRepository;
+    this.locationRepository = locationRepository;
+    this.storageTypeRepository = storageTypeRepository;
+    this.zoneCategoryRepository = zoneCategoryRepository;
+    this.zoneRepository = zoneRepository;
+    this.placeRepository = placeRepository;
+    this.inventoryRepository = inventoryRepository;
+    this.saleRepository = saleRepository;
+}
+
 
     @Override
     public void run(ApplicationArguments args) {
@@ -114,5 +119,35 @@ public class WarehouseInitializer implements ApplicationRunner {
         );
 
         inventoryRepository.saveAll(inventories);
+
+        if (saleRepository.count() == 0) {
+
+            List<Sale> sales = List.of(
+                    new Sale(items.get(0), LocalDate.now().minusDays(1), 5),
+                    new Sale(items.get(1), LocalDate.now().minusDays(2), 3),
+                    new Sale(items.get(2), LocalDate.now().minusDays(3), 1),
+                    new Sale(items.get(3), LocalDate.now().minusDays(4), 10),
+                    new Sale(items.get(4), LocalDate.now().minusDays(5), 2),
+                    new Sale(items.get(5), LocalDate.now().minusDays(6), 7),
+                    new Sale(items.get(6), LocalDate.now().minusDays(7), 4),
+                    new Sale(items.get(7), LocalDate.now().minusDays(8), 6),
+                    new Sale(items.get(8), LocalDate.now().minusDays(9), 2),
+                    new Sale(items.get(9), LocalDate.now().minusDays(10), 8),
+
+                    new Sale(items.get(0), LocalDate.now().minusDays(11), 3),
+                    new Sale(items.get(1), LocalDate.now().minusDays(12), 6),
+                    new Sale(items.get(2), LocalDate.now().minusDays(13), 2),
+                    new Sale(items.get(3), LocalDate.now().minusDays(14), 12),
+                    new Sale(items.get(4), LocalDate.now().minusDays(15), 1),
+                    new Sale(items.get(5), LocalDate.now().minusDays(16), 9),
+                    new Sale(items.get(6), LocalDate.now().minusDays(17), 5),
+                    new Sale(items.get(7), LocalDate.now().minusDays(18), 7),
+                    new Sale(items.get(8), LocalDate.now().minusDays(19), 3),
+                    new Sale(items.get(9), LocalDate.now().minusDays(20), 11)
+            );
+
+            saleRepository.saveAll(sales);
+        }
+
     }
 }
