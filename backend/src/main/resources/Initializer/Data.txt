@@ -1,0 +1,82 @@
+{
+  "items": [
+    { "name": "Hammer", "sku": "SKU001", "unit": "Stück", "minQuantity": 10 },
+    { "name": "Schraubenzieher", "sku": "SKU002", "unit": "Stück", "minQuantity": 5 },
+    { "name": "Bohrmaschine", "sku": "SKU003", "unit": "Stück", "minQuantity": 2 },
+    { "name": "Druckerpapier", "sku": "SKU004", "unit": "Paket", "minQuantity": 20 },
+    { "name": "Toner", "sku": "SKU005", "unit": "Stück", "minQuantity": 3 },
+    { "name": "Ordner", "sku": "SKU006", "unit": "Stück", "minQuantity": 15 },
+    { "name": "Klebeband", "sku": "SKU007", "unit": "Rolle", "minQuantity": 10 },
+    { "name": "Etiketten", "sku": "SKU008", "unit": "Packung", "minQuantity": 25 },
+    { "name": "Schutzbrille", "sku": "SKU009", "unit": "Stück", "minQuantity": 5 },
+    { "name": "Handschuhe", "sku": "SKU010", "unit": "Paar", "minQuantity": 10 }
+  ],
+
+  "locations": [
+    { "name": "Stuttgart", "address": "Stuttgart" },
+    { "name": "Heilbronn", "address": "Heilbronn" }
+  ],
+
+  "storageTypes": [
+    { "name": "Hochregal", "description": "Für schwere Artikel" },
+    { "name": "Kleinteilelager", "description": "Für Bürobedarf" }
+  ],
+
+  "zoneCategories": [
+    { "name": "A-Artikel" },
+    { "name": "Kühlbereich" }
+  ],
+
+  "zones": [
+    { "name": "Zone A", "category": "A-Artikel", "storageType": "Hochregal" },
+    { "name": "Zone B", "category": "Kühlbereich", "storageType": "Kleinteilelager" },
+    { "name": "Zone C", "category": "A-Artikel", "storageType": "Hochregal" },
+    { "name": "Zone D", "category": "Kühlbereich", "storageType": "Kleinteilelager" },
+    { "name": "Zone E", "category": "A-Artikel", "storageType": "Kleinteilelager" }
+  ],
+
+  "places": [
+    { "code": "A-01-01", "capacity": 100, "zone": "Zone A" },
+    { "code": "B-01-01", "capacity": 80, "zone": "Zone B" },
+    { "code": "C-01-01", "capacity": 60, "zone": "Zone C" },
+    { "code": "D-01-01", "capacity": 40, "zone": "Zone D" },
+    { "code": "E-01-01", "capacity": 50, "zone": "Zone E" }
+  ],
+
+  "inventory": [
+    { "itemSku": "SKU001", "placeCode": "A-01-01", "quantity": 50 },
+    { "itemSku": "SKU002", "placeCode": "A-01-01", "quantity": 30 },
+    { "itemSku": "SKU003", "placeCode": "A-01-01", "quantity": 10 },
+    { "itemSku": "SKU004", "placeCode": "B-01-01", "quantity": 40 },
+    { "itemSku": "SKU005", "placeCode": "B-01-01", "quantity": 15 },
+    { "itemSku": "SKU006", "placeCode": "B-01-01", "quantity": 25 },
+    { "itemSku": "SKU007", "placeCode": "C-01-01", "quantity": 35 },
+    { "itemSku": "SKU008", "placeCode": "C-01-01", "quantity": 20 },
+    { "itemSku": "SKU009", "placeCode": "D-01-01", "quantity": 12 },
+    { "itemSku": "SKU010", "placeCode": "E-01-01", "quantity": 18 }
+  ],
+
+  "sales": [
+    { "itemSku": "SKU001", "date": "2024-01-01", "soldQuantity": 5 },
+    { "itemSku": "SKU002", "date": "2024-01-02", "soldQuantity": 3 },
+    { "itemSku": "SKU003", "date": "2024-01-03", "soldQuantity": 1 },
+    { "itemSku": "SKU004", "date": "2024-01-04", "soldQuantity": 10 },
+    { "itemSku": "SKU005", "date": "2024-01-05", "soldQuantity": 2 },
+    { "itemSku": "SKU006", "date": "2024-01-06", "soldQuantity": 7 },
+    { "itemSku": "SKU007", "date": "2024-01-07", "soldQuantity": 4 },
+    { "itemSku": "SKU008", "date": "2024-01-08", "soldQuantity": 6 },
+    { "itemSku": "SKU009", "date": "2024-01-09", "soldQuantity": 2 },
+    { "itemSku": "SKU010", "date": "2024-01-10", "soldQuantity": 8 },
+
+    { "itemSku": "SKU001", "date": "2024-01-11", "soldQuantity": 3 },
+    { "itemSku": "SKU002", "date": "2024-01-12", "soldQuantity": 6 },
+    { "itemSku": "SKU003", "date": "2024-01-13", "soldQuantity": 2 },
+    { "itemSku": "SKU004", "date": "2024-01-14", "soldQuantity": 12 },
+    { "itemSku": "SKU005", "date": "2024-01-15", "soldQuantity": 1 },
+    { "itemSku": "SKU006", "date": "2024-01-16", "soldQuantity": 9 },
+    { "itemSku": "SKU007", "date": "2024-01-17", "soldQuantity": 5 },
+    { "itemSku": "SKU008", "date": "2024-01-18", "soldQuantity": 7 },
+    { "itemSku": "SKU009", "date": "2024-01-19", "soldQuantity": 3 },
+    { "itemSku": "SKU010", "date": "2024-01-20", "soldQuantity": 11 }
+  ]
+}
