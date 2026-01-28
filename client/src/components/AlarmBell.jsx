@@ -1,15 +1,19 @@
 // src/components/AlarmBell.jsx
 
 import { useEffect, useState } from "react";
-import { fetchAlerts } from "./Lager/storageDummyData";
+import { getAlerts } from "../api/alertsApi";
 
 export default function AlarmBell({ onOpen }) {
   const [alerts, setAlerts] = useState([]);
 
   useEffect(() => {
     const load = async () => {
-      const data = await fetchAlerts();
-      setAlerts(data);
+      try {
+        const data = await getAlerts();
+        setAlerts(data);
+      } catch (err) {
+        console.error("Fehler beim Laden der Alerts:", err);
+      }
     };
 
     load();

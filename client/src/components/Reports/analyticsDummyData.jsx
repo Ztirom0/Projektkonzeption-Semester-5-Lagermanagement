@@ -1,5 +1,18 @@
 // src/components/Reports/analyticsDummyData.jsx
 
+
+
+
+
+
+// Kann gelöscht werden, wird nicht mehr gebraucht
+
+
+
+
+
+
+
 import { locations } from "../Lager/storageDummyData";
 
 // Hilfsfunktion: alle echten Artikel aus dem Lager holen

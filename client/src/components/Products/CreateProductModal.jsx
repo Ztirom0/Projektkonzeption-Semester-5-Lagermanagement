@@ -7,15 +7,29 @@ export default function CreateProductModal({ onSave, onClose }) {
   const [name, setName] = useState("");
   const [sku, setSku] = useState("");
   const [unit, setUnit] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave({ name, sku, unit });
+    setSaving(true);
+    setError(null);
+
+    try {
+      await onSave({ name, sku, unit });
+      onClose();
+    } catch (err) {
+      console.error(err);
+      setError("Fehler beim Speichern des Artikels");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <CenteredModal title="Neues Produkt anlegen" onClose={onClose}>
       <form onSubmit={handleSubmit}>
+        {error && <div className="alert alert-danger py-2">{error}</div>}
 
         <div className="mb-3">
           <label className="form-label">Name</label>
@@ -48,11 +62,11 @@ export default function CreateProductModal({ onSave, onClose }) {
         </div>
 
         <div className="d-flex justify-content-end gap-2 mt-4">
-          <button type="button" className="btn btn-secondary" onClick={onClose}>
+          <button type="button" className="btn btn-secondary" onClick={onClose} disabled={saving}>
             Abbrechen
           </button>
-          <button type="submit" className="btn btn-success">
-            Speichern
+          <button type="submit" className="btn btn-success" disabled={saving}>
+            {saving ? "Speichern..." : "Speichern"}
           </button>
         </div>
       </form>

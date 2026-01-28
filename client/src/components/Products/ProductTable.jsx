@@ -4,7 +4,8 @@ export default function ProductTable({ products, inventoryByItemId }) {
   const getBadge = (status) => {
     if (status === "critical") return <span className="badge bg-danger">Kritisch</span>;
     if (status === "low") return <span className="badge bg-warning">Niedrig</span>;
-    return <span className="badge bg-success">OK</span>;
+    if (status === "ok") return <span className="badge bg-success">OK</span>;
+    return <span className="badge bg-secondary">Unbekannt</span>;
   };
 
   return (
@@ -24,7 +25,11 @@ export default function ProductTable({ products, inventoryByItemId }) {
           </thead>
           <tbody>
             {products.map((p) => {
-              const inv = inventoryByItemId[p.id] || { quantity: 0, minQuantity: 0, status: "unknown" };
+              const inv = inventoryByItemId[p.id] || {
+                quantity: 0,
+                minQuantity: 0,
+                status: "unknown"
+              };
 
               return (
                 <tr key={p.id}>

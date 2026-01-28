@@ -43,7 +43,7 @@ export default function StorageZonesTable({
                 onClick={() => setSelectedPlaceId(p.id)}
               >
                 <td>{p.code}</td>
-                <td>{item ? item.productId : "–"}</td>
+                <td>{item ? item.itemId : "–"}</td>
                 <td>{item ? item.quantity : "–"}</td>
                 <td>{item ? item.minQuantity : "–"}</td>
                 <td>

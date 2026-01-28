@@ -1,18 +1,37 @@
+// src/components/Lager/AssignStorageTypeModal.jsx
+
 import { useState } from "react";
 import CenteredModal from "../UI/CenteredModal";
-import { globalStorageTypes, assignStorageTypeToLocation } from "./storageDummyData";
+import { assignStorageTypeToLocation } from "../../api/storageApi";
 
-export default function AssignStorageTypeModal({ location, onClose }) {
+export default function AssignStorageTypeModal({
+  location,
+  storageTypes,
+  onAssigned,
+  onClose
+}) {
   const [selectedTypeId, setSelectedTypeId] = useState(
-    globalStorageTypes[0]?.id ?? null
+    storageTypes[0]?.id ?? null
   );
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedTypeId) return;
 
-    assignStorageTypeToLocation(location.id, selectedTypeId);
-    onClose();
+    try {
+      setSaving(true);
+      setError(null);
+      await assignStorageTypeToLocation(location.id, selectedTypeId);
+      onAssigned?.(location.id, selectedTypeId);
+      onClose();
+    } catch (err) {
+      console.error(err);
+      setError("Fehler beim Zuweisen des Lagertyps");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -21,6 +40,10 @@ export default function AssignStorageTypeModal({ location, onClose }) {
       onClose={onClose}
     >
       <form onSubmit={handleSubmit}>
+        {error && (
+          <div className="alert alert-danger py-2">{error}</div>
+        )}
+
         <div className="mb-3">
           <label className="form-label">Lagertyp</label>
           <select
@@ -30,7 +53,7 @@ export default function AssignStorageTypeModal({ location, onClose }) {
             required
           >
             <option value="">Bitte wählen</option>
-            {globalStorageTypes.map((t) => (
+            {storageTypes.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
               </option>
@@ -43,11 +66,12 @@ export default function AssignStorageTypeModal({ location, onClose }) {
             type="button"
             className="btn btn-secondary"
             onClick={onClose}
+            disabled={saving}
           >
             Abbrechen
           </button>
-          <button type="submit" className="btn btn-success">
-            Speichern
+          <button type="submit" className="btn btn-success" disabled={saving}>
+            {saving ? "Speichern..." : "Speichern"}
           </button>
         </div>
       </form>

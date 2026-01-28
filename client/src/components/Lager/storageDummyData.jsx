@@ -1,5 +1,12 @@
 // src/components/Lager/storageDummyData.jsx
 
+
+
+// Kann gelöscht werden, wird nicht mehr gebraucht
+
+
+
+
 // Globale Lagertypen
 export const globalStorageTypes = [
   { id: 1, name: "Hochregal", description: "Hochregallager mit Palettenplätzen" },
