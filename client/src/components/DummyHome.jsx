@@ -4,10 +4,9 @@ import { useState, useEffect } from "react";
 import Navigation from "./Navigation";
 
 import MainDashboard from "./Dashboard/MainDashboard";
-import DummyProducts from "./Products/DummyProducts";
 import ProductSearchMask from "./Products/ProductSearchMask";
 import CreateProductModal from "./Products/CreateProductModal";
-import WarehouseOverview from "./Lager/StorageStats";
+import WarehouseOverview from "./Lager/WarehouseOverview";
 import ReportsDashboard from "./Reports/ReportsDashboard";
 import AddLocationModal from "./Lager/AddLocationModal";
 import AddStorageTypeModal from "./Lager/AssignStorageTypeModal";
@@ -23,33 +22,44 @@ export default function DummyHome() {
   const [showAlerts, setShowAlerts] = useState(false);
   const [alerts, setAlerts] = useState([]);
   const [items, setItems] = useState([]);
+
   const [showProductModal, setShowProductModal] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showStorageTypeModal, setShowStorageTypeModal] = useState(false);
   const [showZoneModal, setShowZoneModal] = useState(false);
 
+  // Load alerts when panel is opened
   useEffect(() => {
     if (showAlerts) {
       getAlerts().then(setAlerts);
     }
   }, [showAlerts]);
 
+  // Load items once
   useEffect(() => {
-    getAllItems().then(setItems).catch(err => console.error("Fehler beim Laden der Items:", err));
+    getAllItems()
+      .then(setItems)
+      .catch(err => console.error("Fehler beim Laden der Items:", err));
   }, []);
 
-  // Handle navigation from sidebar with modal support
+  // Navigation handler
   const handleNavigate = (newView) => {
-    if (newView === "products-add") {
-      setShowProductModal(true);
-    } else if (newView === "lager-location") {
-      setShowLocationModal(true);
-    } else if (newView === "lager-type") {
-      setShowStorageTypeModal(true);
-    } else if (newView === "lager-zone") {
-      setShowZoneModal(true);
-    } else {
-      setView(newView);
+    switch (newView) {
+      case "products-add":
+        setShowProductModal(true);
+        break;
+      case "lager-location":
+        setShowLocationModal(true);
+        break;
+      case "lager-type":
+        setShowStorageTypeModal(true);
+        break;
+      case "lager-zone":
+        setShowZoneModal(true);
+        break;
+      default:
+        setView(newView);
+        break;
     }
   };
 
@@ -70,22 +80,23 @@ export default function DummyHome() {
 
         <div className="container-fluid py-4">
 
-          {/* DASHBOARD VIEW */}
-          {view === "dashboard" && (
-            <MainDashboard />
-          )}
+          {/* DASHBOARD */}
+          {view === "dashboard" && <MainDashboard />}
 
-          {/* PRODUCTS VIEWS */}
+          {/* PRODUCTS */}
           {view === "products" && (
-            <ProductSearchMask items={items} onAddClick={() => setShowProductModal(true)} />
+            <ProductSearchMask 
+              items={items} 
+              onAddClick={() => setShowProductModal(true)} 
+            />
           )}
 
-          {/* LAGER / WAREHOUSE VIEWS */}
+          {/* WAREHOUSE */}
           {view === "lager" && (
             <WarehouseOverview onBack={() => setView("dashboard")} />
           )}
 
-          {/* REPORTS VIEWS */}
+          {/* REPORTS */}
           {view === "reports" && (
             <ReportsDashboard onBack={() => setView("dashboard")} />
           )}
@@ -93,32 +104,26 @@ export default function DummyHome() {
         </div>
       </div>
 
-      {/* MODALS FOR ADD OPERATIONS */}
+      {/* MODALS */}
       {showProductModal && (
-        <CreateProductModal 
+        <CreateProductModal
           onClose={() => {
             setShowProductModal(false);
-            getAllItems().then(setItems); // Reload items after adding
-          }} 
+            getAllItems().then(setItems); // reload items
+          }}
         />
       )}
 
       {showLocationModal && (
-        <AddLocationModal 
-          onClose={() => setShowLocationModal(false)} 
-        />
+        <AddLocationModal onClose={() => setShowLocationModal(false)} />
       )}
 
       {showStorageTypeModal && (
-        <AddStorageTypeModal 
-          onClose={() => setShowStorageTypeModal(false)} 
-        />
+        <AddStorageTypeModal onClose={() => setShowStorageTypeModal(false)} />
       )}
 
       {showZoneModal && (
-        <AddZoneModal 
-          onClose={() => setShowZoneModal(false)} 
-        />
+        <AddZoneModal onClose={() => setShowZoneModal(false)} />
       )}
 
       <style>{`
