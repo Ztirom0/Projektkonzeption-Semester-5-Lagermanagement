@@ -1,6 +1,7 @@
 package com.moritz.lagerverwaltungssystem.controller;
 
 import com.moritz.lagerverwaltungssystem.dto.StorageTypeDTO;
+import com.moritz.lagerverwaltungssystem.dto.ZoneDTO;
 import com.moritz.lagerverwaltungssystem.service.StorageTypeService;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,5 +25,10 @@ public class StorageTypeController {
     @PostMapping
     public StorageTypeDTO create(@RequestBody StorageTypeDTO dto) {
         return storageTypeService.createStorageType(dto);
+    }
+
+    @GetMapping("/{id}/zones")
+    public List<ZoneDTO> getZones(@PathVariable Long id) {
+        return storageTypeService.getZonesById(id);
     }
 }

@@ -23,6 +23,7 @@ public class WarehouseInitializer implements ApplicationRunner {
     private final ZoneRepository zoneRepository;
     private final PlaceRepository placeRepository;
     private final InventoryRepository inventoryRepository;
+    private final InventoryHistoryRepository inventoryHistoryRepository;
     private final SaleRepository saleRepository;
 
     public WarehouseInitializer(ItemRepository itemRepository,
@@ -32,6 +33,7 @@ public class WarehouseInitializer implements ApplicationRunner {
                                 ZoneRepository zoneRepository,
                                 PlaceRepository placeRepository,
                                 InventoryRepository inventoryRepository,
+                                InventoryHistoryRepository inventoryHistoryRepository,
                                 SaleRepository saleRepository) {
         this.itemRepository = itemRepository;
         this.locationRepository = locationRepository;
@@ -40,6 +42,7 @@ public class WarehouseInitializer implements ApplicationRunner {
         this.zoneRepository = zoneRepository;
         this.placeRepository = placeRepository;
         this.inventoryRepository = inventoryRepository;
+        this.inventoryHistoryRepository = inventoryHistoryRepository;
         this.saleRepository = saleRepository;
     }
 
@@ -110,6 +113,16 @@ public class WarehouseInitializer implements ApplicationRunner {
             LocalDate date = LocalDate.parse(d.date);
             Sale sale = new Sale(item, date, d.soldQuantity);
             saleRepository.save(sale);
+        }
+
+        if (data.inventoryHistory != null) {
+            for (InventoryHistoryData d : data.inventoryHistory) {
+                Item item = itemMap.get(d.itemSku);
+                if (item == null) { System.out.println("WARN: Item not found for SKU " + d.itemSku); continue; }
+                LocalDate date = LocalDate.parse(d.date);
+                InventoryHistory history = new InventoryHistory(item, date, d.quantity);
+                inventoryHistoryRepository.save(history);
+            }
         }
     }
 }

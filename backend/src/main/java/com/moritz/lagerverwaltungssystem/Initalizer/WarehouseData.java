@@ -11,4 +11,11 @@ public class WarehouseData {
     public List<PlaceData> places;
     public List<InventoryData> inventory;
     public List<SaleData> sales;
+    public List<LocationStorageTypeData> locationStorageTypes;
+    public List<InventoryHistoryData> inventoryHistory;
+    
+    public static class LocationStorageTypeData {
+        public String location;
+        public List<String> storageTypes;
+    }
 }

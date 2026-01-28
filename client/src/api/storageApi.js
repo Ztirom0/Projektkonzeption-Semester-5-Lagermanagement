@@ -87,9 +87,9 @@ export async function createZoneCategory(data) {
 
 // ---------- Zonen & Plätze ----------
 
-// GET /storage-types/{id}/zone
+// GET /storage-types/{id}/zones
 export async function getZonesByStorageType(storageTypeId) {
-  const res = await fetch(`${BASE_URL}/storage-types/${storageTypeId}/zone`, {
+  const res = await fetch(`${BASE_URL}/storage-types/${storageTypeId}/zones`, {
     method: "GET",
     headers: { "Content-Type": "application/json" }
   });
