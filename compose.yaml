@@ -78,7 +78,7 @@ services:
       mysql:
         condition: service_healthy
     labels:
-      traefik.http.routers.backend.rule: Host(`localhost`) && PathPrefix(`/api`)
+      traefik.http.routers.backend.rule: PathPrefix(`/api`)
       traefik.http.services.backend.loadbalancer.server.port: 8080
     networks:
       - default

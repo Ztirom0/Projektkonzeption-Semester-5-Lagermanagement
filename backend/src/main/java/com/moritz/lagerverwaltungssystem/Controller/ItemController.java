@@ -2,13 +2,12 @@ package com.moritz.lagerverwaltungssystem.controller;
 
 import com.moritz.lagerverwaltungssystem.dto.ItemDTO;
 import com.moritz.lagerverwaltungssystem.service.ItemService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/items")
+@RequestMapping("/api/items")
 public class ItemController {
 
     private final ItemService service;
@@ -19,14 +18,14 @@ public class ItemController {
 
     // GET /items
     @GetMapping
-    public ResponseEntity<List<ItemDTO>> getAllItems() {
-        return ResponseEntity.ok(service.getAllItems());
+    public List<ItemDTO> getAllItems() {
+        return service.getAllItems();
     }
 
     // POST /items
     @PostMapping
-    public ResponseEntity<ItemDTO> addItem(@RequestBody ItemDTO dto) {
+    public ItemDTO addItem(@RequestBody ItemDTO dto) {
         ItemDTO created = service.addItem(dto);
-        return ResponseEntity.ok(created);
+        return created;
     }
 }

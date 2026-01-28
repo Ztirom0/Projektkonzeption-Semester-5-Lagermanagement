@@ -9,7 +9,7 @@ import java.util.List;
 
 
 @RestController
-@RequestMapping("/recommendations")
+@RequestMapping("/api/recommendations")
 public class RecommendationController {
 
     private final RecommendationService service;
@@ -19,7 +19,7 @@ public class RecommendationController {
     }
 
     @GetMapping
-    public ResponseEntity<List<RecommendationDTO>> getRecommendations() {
-        return ResponseEntity.ok(service.getRecommendations());
+    public List<RecommendationDTO> getRecommendations() {
+        return service.getRecommendations();
     }
 }
