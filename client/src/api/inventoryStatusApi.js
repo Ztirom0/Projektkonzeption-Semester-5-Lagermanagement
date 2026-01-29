@@ -9,7 +9,6 @@ export const getInventoryStatus = async (itemId) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error(`Error fetching inventory status for item ${itemId}:`, error);
     throw error;
   }
 };

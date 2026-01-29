@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react";
 import { getAllItems } from "../../api/itemsApi";
 import { getSales } from "../../api/salesApi";
-import { getInventoryStatus } from "../../api/inventoryStatusApi";
+import { getInventory, getInventoryHistory } from "../../api/inventoryApi";
 import { getLocations } from "../../api/storageApi";
-import { getAlerts } from "../../api/alertsApi";
+import { calculateAlerts } from "../../api/alertsApi";
+import { calculateAllInventoryStatuses } from "../../api/inventoryCalculations";
+import { calculateForecast } from "../../api/forecastApi";
 import StatCard from "./StatCard";
 import SalesChart from "./SalesChart";
 import CriticalItemsTable from "./CriticalItemsTable";
@@ -20,6 +22,81 @@ export default function MainDashboard() {
   const [chartData, setChartData] = useState([]);
   const [inventoryStatus, setInventoryStatus] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [forecastMethod, setForecastMethod] = useState("moving-average");
+
+  const normalizeSales = (sales) => {
+    return (sales || [])
+      .map((s) => {
+        const dateRaw = s.saleDate || s.date || s.Date || s.created || s.createdAt;
+        const quantityRaw = s.quantity ?? s.soldQuantity ?? s.Quantity ?? 0;
+        const dateObj = new Date(dateRaw);
+        if (!dateRaw || Number.isNaN(dateObj.getTime())) return null;
+        return {
+          ...s,
+          __dateObj: dateObj,
+          __dateKey: dateObj.toISOString().split("T")[0],
+          __quantity: Number(quantityRaw) || 0
+        };
+      })
+      .filter(Boolean);
+  };
+
+  const buildChartData = (sales, history, ids, method) => {
+    const normalized = normalizeSales(sales);
+    const grouped = {};
+    normalized.forEach((s) => {
+      if (!grouped[s.__dateKey]) grouped[s.__dateKey] = 0;
+      grouped[s.__dateKey] += s.__quantity;
+    });
+
+    const historical = Object.entries(grouped)
+      .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+      .slice(-30)
+      .map(([date, qty]) => ({
+        date: new Date(date).toLocaleDateString("de-DE", { month: "short", day: "numeric" }),
+        verkauf: qty,
+        prognose: null
+      }));
+
+    if (!ids.length) return historical;
+
+    const latestDate = normalized.length > 0
+      ? new Date(Math.max(...normalized.map(s => s.__dateObj.getTime())))
+      : new Date();
+
+    const forecastDates = Array.from({ length: 30 }, (_, i) => {
+      const d = new Date(latestDate);
+      d.setDate(d.getDate() + i + 1);
+      return d;
+    });
+
+    const forecasts = ids
+      .map((id) => {
+        try {
+          return calculateForecast(sales, history, id, method, 30);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+
+    const forecastTotals = forecastDates.map((_, idx) => {
+      return forecasts.reduce((sum, fc) => {
+        if (!fc?.points?.[idx]) return sum;
+        const prevQty = idx === 0 ? fc.startQuantity : fc.points[idx - 1].quantity;
+        const currQty = fc.points[idx].quantity;
+        return sum + Math.max(0, prevQty - currQty);
+      }, 0);
+    });
+
+    const forecastSeries = forecastDates.map((d, idx) => ({
+      date: d.toLocaleDateString("de-DE", { month: "short", day: "numeric" }),
+      verkauf: null,
+      prognose: Math.round(forecastTotals[idx])
+    }));
+
+    return [...historical, ...forecastSeries];
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -32,58 +109,50 @@ export default function MainDashboard() {
         const locations = await getLocations();
         setStats(prev => ({ ...prev, totalLocations: locations.length }));
 
-        // Lade Warnungen
-        const alerts = await getAlerts();
+        // Lade Verkaufsdaten für Haupt-Chart
+        const sales = await getSales();
+        
+        if (sales.length > 0) {
+          const ids = items.map((item) => item.id);
+
+          const historyPromises = ids.map((itemId) =>
+            getInventoryHistory(itemId, 180).catch(() => [])
+          );
+          const historyResults = await Promise.all(historyPromises);
+          const combinedHistory = historyResults.flat();
+
+          const chartPoints = buildChartData(sales, combinedHistory, ids, forecastMethod);
+          setChartData(chartPoints);
+        } else {
+          setChartData([]);
+        }
+
+        // Lade Inventory-Daten (roh, ohne Backend-Berechnungen)
+        const inventoryList = await getInventory();
+
+        // Berechne Status für alle Items im Frontend
+        const calculatedStatuses = calculateAllInventoryStatuses(items, inventoryList, sales);
+        setInventoryStatus(calculatedStatuses);
+
+        // Berechne Alerts im Frontend
+        const alerts = calculateAlerts(calculatedStatuses);
         const critical = alerts.filter(a => a.type === "CRITICAL").length;
         setStats(prev => ({ ...prev, criticalAlerts: critical }));
 
-        // Lade Verkaufsdaten für Haupt-Chart
-        const sales = await getSales();
-        if (sales.length > 0) {
-          // Gruppiere nach Datum
-          const grouped = {};
-          sales.forEach(s => {
-            if (!grouped[s.saleDate]) grouped[s.saleDate] = 0;
-            grouped[s.saleDate] += s.quantity;
-          });
-          
-          const chartPoints = Object.entries(grouped)
-            .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
-            .slice(-30) // Letzte 30 Tage
-            .map(([date, qty]) => ({
-              date: new Date(date).toLocaleDateString('de-DE', { month: 'short', day: 'numeric' }),
-              verkauf: qty
-            }));
-          setChartData(chartPoints);
-        }
-
-        // Lade Bestandsstatus für alle Items
-        const statuses = await Promise.all(
-          items.map(item => getInventoryStatus(item.id).catch(err => {
-            console.error(`Failed to load status for item ${item.id}:`, err);
-            return null;
-          }))
-        );
-        const validStatuses = statuses.filter(Boolean);
-        console.log('Loaded inventory statuses:', validStatuses);
-        setInventoryStatus(validStatuses);
-
         // Zähle Items mit niedrigem Bestand
-        const lowStock = validStatuses.filter(s => {
+        const lowStock = calculatedStatuses.filter(s => {
           const days = s?.daysRemaining;
-          return days !== undefined && days !== null && days <= 5 && days >= 0;
+          return days !== undefined && days !== null && days <= 10 && days >= 0;
         }).length;
-        console.log('Low stock items count:', lowStock);
         setStats(prev => ({ ...prev, lowStockItems: lowStock }));
 
       } catch (err) {
-        console.error("Fehler beim Laden des Dashboards:", err);
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, []);
+  }, [forecastMethod]);
 
   if (loading) {
     return (
@@ -97,24 +166,12 @@ export default function MainDashboard() {
 
   return (
     <div className="main-dashboard">
-      {/* Stats Cards */}
-      <div className="row g-4 mb-5">
-        <div className="col-md-6 col-lg-3">
-          <StatCard icon="📦" value={stats.totalItems} label="Artikel im System" variant="primary" />
-        </div>
-        <div className="col-md-6 col-lg-3">
-          <StatCard icon="⚠️" value={stats.lowStockItems} label="Niedriger Bestand" variant="warning" />
-        </div>
-        <div className="col-md-6 col-lg-3">
-          <StatCard icon="📍" value={stats.totalLocations} label="Lagerstandorte" variant="info" />
-        </div>
-        <div className="col-md-6 col-lg-3">
-          <StatCard icon="🚨" value={stats.criticalAlerts} label="Kritische Meldungen" variant="danger" />
-        </div>
-      </div>
-
       {/* Main Chart */}
-      <SalesChart data={chartData} />
+      <SalesChart
+        data={chartData}
+        forecastMethod={forecastMethod}
+        onForecastMethodChange={setForecastMethod}
+      />
 
       {/* Critical Items */}
       <CriticalItemsTable items={inventoryStatus} />
@@ -152,7 +209,7 @@ export default function MainDashboard() {
         .stat-card-danger { border-left-color: #dc3545; }
 
         .stat-icon {
-          font-size: 2.5rem;
+          font-size: 0.5rem;
           line-height: 1;
         }
 

@@ -27,7 +27,6 @@ export default function AssignStorageTypeModal({
       onAssigned?.(location.id, selectedTypeId);
       onClose();
     } catch (err) {
-      console.error(err);
       setError("Fehler beim Zuweisen des Lagertyps");
     } finally {
       setSaving(false);
@@ -41,7 +40,7 @@ export default function AssignStorageTypeModal({
     >
       <form onSubmit={handleSubmit}>
         {error && (
-          <div className="alert alert-danger py-2">{error}</div>
+          <div className="alert alert-danger py-0">{error}</div>
         )}
 
         <div className="mb-3">
@@ -61,7 +60,7 @@ export default function AssignStorageTypeModal({
           </select>
         </div>
 
-        <div className="d-flex justify-content-end gap-2">
+        <div className="d-flex justify-content-end gap-0">
           <button
             type="button"
             className="btn btn-secondary"

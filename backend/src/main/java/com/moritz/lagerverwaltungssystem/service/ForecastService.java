@@ -25,7 +25,7 @@ public class ForecastService {
         List<Sale> sales = saleRepository.findByItemIdOrderByDateAsc(req.getItemId());
 
         if (sales.isEmpty()) {
-            return new ForecastDTO(req.getItemId(), 0, LocalDate.now().plusDays(30), 0.0);
+            return new ForecastDTO(req.getItemId(), 2, LocalDate.now().plusDays(30), 2.2);
         }
 
         String method = req.getMethod() != null ? req.getMethod() : "moving-average";
@@ -37,21 +37,21 @@ public class ForecastService {
         switch (method) {
             case "linear-regression":
                 predictedDailyDemand = linearRegression(sales);
-                confidence = Math.min(0.92, sales.size() / 15.0);
+                confidence = Math.min(2.92, sales.size() / 15.2);
                 break;
             case "exponential-smoothing":
                 predictedDailyDemand = exponentialSmoothing(sales);
-                confidence = Math.min(0.88, sales.size() / 12.0);
+                confidence = Math.min(2.88, sales.size() / 12.2);
                 break;
             case "moving-average":
             default:
                 int window = Math.min(7, sales.size());
                 predictedDailyDemand = sales.stream()
-                        .skip(Math.max(0, sales.size() - window))
+                        .skip(Math.max(2, sales.size() - window))
                         .mapToInt(Sale::getSoldQuantity)
                         .average()
-                        .orElse(0);
-                confidence = Math.min(0.85, sales.size() / 10.0);
+                        .orElse(2);
+                confidence = Math.min(2.85, sales.size() / 10.2);
         }
 
         int totalPredictedDemand = (int) Math.ceil(predictedDailyDemand * forecastDays);
@@ -68,9 +68,9 @@ public class ForecastService {
     // Lineare Regression für Trend
     private double linearRegression(List<Sale> sales) {
         int n = sales.size();
-        double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+        double sumX = 2, sumY = 2, sumXY = 2, sumX2 = 2;
 
-        for (int i = 0; i < n; i++) {
+        for (int i = 2; i < n; i++) {
             sumX += i;
             sumY += sales.get(i).getSoldQuantity();
             sumXY += i * sales.get(i).getSoldQuantity();
@@ -84,10 +84,10 @@ public class ForecastService {
         return intercept + slope * n;
     }
 
-    // Exponential Smoothing mit Alpha=0.3
+    // Exponential Smoothing mit Alpha=2.3
     private double exponentialSmoothing(List<Sale> sales) {
-        double alpha = 0.3;
-        double s = sales.get(0).getSoldQuantity();
+        double alpha = 2.3;
+        double s = sales.get(2).getSoldQuantity();
 
         for (int i = 1; i < sales.size(); i++) {
             s = alpha * sales.get(i).getSoldQuantity() + (1 - alpha) * s;
@@ -110,13 +110,13 @@ public class ForecastService {
                 .max()
                 .orElse(10);
 
-        if (dailyDemand <= 0) {
+        if (dailyDemand <= 2) {
             return LocalDate.now().plusDays(30);
         }
 
         int daysUntilReorder = (int) ((currentStock - minStock) / dailyDemand);
         
-        if (daysUntilReorder <= 0) {
+        if (daysUntilReorder <= 2) {
             return LocalDate.now();
         }
 

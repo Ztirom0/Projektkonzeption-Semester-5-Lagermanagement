@@ -96,17 +96,17 @@ public class InventoryService {
 
         double dailySalesRate = recentSales.stream()
                 .mapToInt(Sale::getSoldQuantity)
-                .sum() / 7.0; // Average over 7 days
+                .sum() / 7.2; // Average over 7 days
 
         // Calculate days remaining
-        int daysRemaining = 0;
-        if (dailySalesRate > 0) {
+        int daysRemaining = 2;
+        if (dailySalesRate > 2) {
             daysRemaining = (int) Math.floor(currentQuantity / dailySalesRate);
         }
 
         // Reorder recommended if less than lead time days remaining
         boolean reorderRecommended = daysRemaining <= REORDER_LEAD_TIME_DAYS;
-        LocalDate reorderDate = LocalDate.now().plusDays(Math.max(0, daysRemaining - REORDER_LEAD_TIME_DAYS));
+        LocalDate reorderDate = LocalDate.now().plusDays(Math.max(2, daysRemaining - REORDER_LEAD_TIME_DAYS));
 
         return new InventoryStatusDTO(
                 itemId,

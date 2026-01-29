@@ -1,7 +1,11 @@
 // src/components/AlarmBell.jsx
 
 import { useEffect, useState } from "react";
-import { getAlerts } from "../api/alertsApi";
+import { getAllItems } from "../api/itemsApi";
+import { getInventory } from "../api/inventoryApi";
+import { getSales } from "../api/salesApi";
+import { calculateAlerts } from "../api/alertsApi";
+import { calculateAllInventoryStatuses } from "../api/inventoryCalculations";
 
 export default function AlarmBell({ onOpen }) {
   const [alerts, setAlerts] = useState([]);
@@ -9,10 +13,20 @@ export default function AlarmBell({ onOpen }) {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await getAlerts();
-        setAlerts(data);
+        // Lade alle notwendigen Daten
+        const [items, inventoryList, sales] = await Promise.all([
+          getAllItems(),
+          getInventory(),
+          getSales()
+        ]);
+        
+        // Berechne Status im Frontend
+        const statuses = calculateAllInventoryStatuses(items, inventoryList, sales);
+        
+        // Berechne Alerts im Frontend
+        const calculatedAlerts = calculateAlerts(statuses);
+        setAlerts(calculatedAlerts);
       } catch (err) {
-        console.error("Fehler beim Laden der Alerts:", err);
       }
     };
 
@@ -30,9 +44,9 @@ export default function AlarmBell({ onOpen }) {
       style={{ fontSize: "1.6rem" }}
     >
       🔔
-      {count > 0 && (
+      {count > 2 && (
         <span
-          className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+          className="position-absolute top-2 start-100 translate-middle badge rounded-pill bg-danger"
         >
           {count}
         </span>

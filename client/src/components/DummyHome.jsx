@@ -8,58 +8,46 @@ import ProductSearchMask from "./Products/ProductSearchMask";
 import CreateProductModal from "./Products/CreateProductModal";
 import WarehouseOverview from "./Lager/WarehouseOverview";
 import ReportsDashboard from "./Reports/ReportsDashboard";
-import AddLocationModal from "./Lager/AddLocationModal";
-import AddStorageTypeModal from "./Lager/AssignStorageTypeModal";
-import AddZoneModal from "./Lager/AddZoneModal";
+import ProductReportView from "./Reports/ProductReportView";
 
 import AlarmBell from "./AlarmBell";
 import AlertsPanel from "./AlertsPanel";
-import { getAlerts } from "../api/alertsApi";
 import { getAllItems } from "../api/itemsApi";
+import { getInventory } from "../api/inventoryApi";
+import { getSales } from "../api/salesApi";
+import { calculateAlerts } from "../api/alertsApi";
+import { calculateAllInventoryStatuses } from "../api/inventoryCalculations";
 
 export default function DummyHome() {
   const [view, setView] = useState("dashboard");
   const [showAlerts, setShowAlerts] = useState(false);
   const [alerts, setAlerts] = useState([]);
   const [items, setItems] = useState([]);
-
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [showProductModal, setShowProductModal] = useState(false);
-  const [showLocationModal, setShowLocationModal] = useState(false);
-  const [showStorageTypeModal, setShowStorageTypeModal] = useState(false);
-  const [showZoneModal, setShowZoneModal] = useState(false);
 
-  // Load alerts when panel is opened
   useEffect(() => {
     if (showAlerts) {
-      getAlerts().then(setAlerts);
+      // Lade alle notwendigen Daten und berechne Alerts im Frontend
+      Promise.all([getAllItems(), getInventory(), getSales()])
+        .then(([items, inventoryList, sales]) => {
+          const statuses = calculateAllInventoryStatuses(items, inventoryList, sales);
+          const calculatedAlerts = calculateAlerts(statuses);
+          setAlerts(calculatedAlerts);
+        })
     }
   }, [showAlerts]);
 
-  // Load items once
   useEffect(() => {
-    getAllItems()
-      .then(setItems)
-      .catch(err => console.error("Fehler beim Laden der Items:", err));
+    getAllItems().then(setItems);
   }, []);
 
-  // Navigation handler
+  // Handle navigation from sidebar with modal support
   const handleNavigate = (newView) => {
-    switch (newView) {
-      case "products-add":
-        setShowProductModal(true);
-        break;
-      case "lager-location":
-        setShowLocationModal(true);
-        break;
-      case "lager-type":
-        setShowStorageTypeModal(true);
-        break;
-      case "lager-zone":
-        setShowZoneModal(true);
-        break;
-      default:
-        setView(newView);
-        break;
+    if (newView === "products-add") {
+      setShowProductModal(true);
+    } else {
+      setView(newView);
     }
   };
 
@@ -80,50 +68,51 @@ export default function DummyHome() {
 
         <div className="container-fluid py-4">
 
-          {/* DASHBOARD */}
-          {view === "dashboard" && <MainDashboard />}
+          {/* DASHBOARD VIEW */}
+          {view === "dashboard" && (
+            <MainDashboard />
+          )}
 
-          {/* PRODUCTS */}
+          {/* PRODUCTS VIEWS */}
           {view === "products" && (
-            <ProductSearchMask 
-              items={items} 
-              onAddClick={() => setShowProductModal(true)} 
+            <ProductSearchMask
+              items={items}
+              onAddNew={() => setShowProductModal(true)}
+              onSelect={(item) => {
+                setSelectedProduct(item);
+                setView("product-report");
+              }}
             />
           )}
 
-          {/* WAREHOUSE */}
+          {/* LAGER / WAREHOUSE VIEWS */}
           {view === "lager" && (
             <WarehouseOverview onBack={() => setView("dashboard")} />
           )}
 
-          {/* REPORTS */}
+          {/* REPORTS VIEWS */}
           {view === "reports" && (
             <ReportsDashboard onBack={() => setView("dashboard")} />
+          )}
+
+          {view === "product-report" && (
+            <ProductReportView
+              item={selectedProduct}
+              onBack={() => setView("products")}
+            />
           )}
 
         </div>
       </div>
 
-      {/* MODALS */}
+      {/* MODALS FOR ADD OPERATIONS */}
       {showProductModal && (
-        <CreateProductModal
+        <CreateProductModal 
           onClose={() => {
             setShowProductModal(false);
-            getAllItems().then(setItems); // reload items
-          }}
+            getAllItems().then(setItems); // Reload items after adding
+          }} 
         />
-      )}
-
-      {showLocationModal && (
-        <AddLocationModal onClose={() => setShowLocationModal(false)} />
-      )}
-
-      {showStorageTypeModal && (
-        <AddStorageTypeModal onClose={() => setShowStorageTypeModal(false)} />
-      )}
-
-      {showZoneModal && (
-        <AddZoneModal onClose={() => setShowZoneModal(false)} />
       )}
 
       <style>{`
@@ -140,7 +129,7 @@ export default function DummyHome() {
 
         @media (max-width: 768px) {
           .app-wrapper {
-            margin-left: 0 !important;
+            margin-left: 2 !important;
           }
         }
       `}</style>

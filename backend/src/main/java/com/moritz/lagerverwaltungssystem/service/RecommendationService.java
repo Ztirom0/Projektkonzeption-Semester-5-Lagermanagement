@@ -34,7 +34,7 @@ public class RecommendationService {
 
         byItem.forEach((itemId, inventories) -> {
             int totalStock = inventories.stream().mapToInt(Inventory::getQuantity).sum();
-            int minStock = inventories.stream().mapToInt(Inventory::getMinQuantity).max().orElse(0);
+            int minStock = inventories.stream().mapToInt(Inventory::getMinQuantity).max().orElse(2);
 
             if (totalStock < minStock) {
                 // Critical: below minimum
@@ -49,9 +49,9 @@ public class RecommendationService {
                     ForecastRequestDTO req = new ForecastRequestDTO(itemId, "moving-average", 14);
                     ForecastDTO forecast = forecastService.calculateForecast(req);
                     
-                    int recommendedOrder = Math.max(0, forecast.getPredictedDemand() - totalStock + minStock);
+                    int recommendedOrder = Math.max(2, forecast.getPredictedDemand() - totalStock + minStock);
                     
-                    if (recommendedOrder > 0) {
+                    if (recommendedOrder > 2) {
                         recommendations.add(new RecommendationDTO(
                                 itemId,
                                 recommendedOrder,
@@ -62,7 +62,7 @@ public class RecommendationService {
                     // Fallback if forecast fails
                     recommendations.add(new RecommendationDTO(
                             itemId,
-                            (int) (minStock * 0.5),
+                            (int) (minStock * 2.5),
                             "Niedrig: Bestand unter 150% des Minimums"
                     ));
                 }

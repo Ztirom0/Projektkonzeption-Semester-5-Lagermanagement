@@ -19,7 +19,6 @@ export default function CreateProductModal({ onSave, onClose }) {
       await onSave({ name, sku, unit });
       onClose();
     } catch (err) {
-      console.error(err);
       setError("Fehler beim Speichern des Artikels");
     } finally {
       setSaving(false);
@@ -29,7 +28,7 @@ export default function CreateProductModal({ onSave, onClose }) {
   return (
     <CenteredModal title="Neues Produkt anlegen" onClose={onClose}>
       <form onSubmit={handleSubmit}>
-        {error && <div className="alert alert-danger py-2">{error}</div>}
+        {error && <div className="alert alert-danger py-0">{error}</div>}
 
         <div className="mb-3">
           <label className="form-label">Name</label>
@@ -61,7 +60,7 @@ export default function CreateProductModal({ onSave, onClose }) {
           />
         </div>
 
-        <div className="d-flex justify-content-end gap-2 mt-4">
+        <div className="d-flex justify-content-end gap-0 mt-4">
           <button type="button" className="btn btn-secondary" onClick={onClose} disabled={saving}>
             Abbrechen
           </button>

@@ -10,7 +10,8 @@ export default function Navigation({ onNavigate }) {
   const menuStructure = [
     {
       id: "dashboard",
-      label: "📊 Dashboard",
+      icon: "bi-speedometer2",
+      label: "Dashboard",
       description: "Hauptübersicht & Kennzahlen",
       action: () => {
         onNavigate("dashboard");
@@ -19,33 +20,33 @@ export default function Navigation({ onNavigate }) {
     },
     {
       id: "products",
-      label: "📦 Produktverwaltung",
+      icon: "bi-box-seam",
+      label: "Produktverwaltung",
       description: "Artikel & Bestand verwalten",
-      submenu: [
-        { label: "Alle Produkte", action: () => onNavigate("products") },
-        { label: "+ Neues Produkt", action: () => onNavigate("products-add"), icon: "✨" },
-        { label: "Bestandsanalyse", action: () => onNavigate("products-analysis") }
-      ]
+      action: () => {
+        onNavigate("products");
+        setActiveMenu("products");
+      }
     },
     {
       id: "lager",
-      label: "🏭 Lagerlogistik",
+      icon: "bi-building",
+      label: "Lagerlogistik",
       description: "Lagerverwaltung & Struktur",
-      submenu: [
-        { label: "Lagerübersicht", action: () => onNavigate("lager") },
-        { label: "+ Standort", action: () => onNavigate("lager-location"), icon: "📍" },
-        { label: "+ Lagertyp", action: () => onNavigate("lager-type"), icon: "📍" },
-        { label: "+ Zone", action: () => onNavigate("lager-zone"), icon: "📍" }
-      ]
+      action: () => {
+        onNavigate("lager");
+        setActiveMenu("lager");
+      }
     },
     {
       id: "reports",
-      label: "📈 Berichte",
+      icon: "bi-graph-up",
+      label: "Berichte",
       description: "Datenanalyse & Prognosen",
-      submenu: [
-        { label: "Verkaufsanalyse", action: () => onNavigate("reports") },
-        { label: "Prognose", action: () => onNavigate("reports-forecast") }
-      ]
+      action: () => {
+        onNavigate("reports");
+        setActiveMenu("reports");
+      }
     }
   ];
 
@@ -83,7 +84,9 @@ export default function Navigation({ onNavigate }) {
                   }
                 }}
               >
-                <span className="menu-icon">{item.label.charAt(0)}</span>
+                <span className="menu-icon">
+                  <i className={`bi ${item.icon}`}></i>
+                </span>
                 {sidebarOpen && (
                   <>
                     <div className="menu-content">
@@ -127,7 +130,9 @@ export default function Navigation({ onNavigate }) {
         <div className="sidebar-footer">
           {sidebarOpen && (
             <>
-              <span className="footer-icon">ⓘ</span>
+              <span className="footer-icon">
+                <i className="bi bi-info-circle"></i>
+              </span>
               <span className="footer-text">Lagerverwaltungssystem v1.0</span>
             </>
           )}
@@ -137,9 +142,12 @@ export default function Navigation({ onNavigate }) {
       {/* Mobile Hamburger */}
       <div className="mobile-nav-header">
         <button className="btn-mobile-menu" onClick={() => setSidebarOpen(!sidebarOpen)}>
-          ☰
+          <i className="bi bi-list"></i>
         </button>
-        <div className="mobile-title">📦 SmartStock</div>
+        <div className="mobile-title">
+          <i className="bi bi-box-seam me-0"></i>
+          SmartStock
+        </div>
       </div>
 
       <style>{`
@@ -152,7 +160,7 @@ export default function Navigation({ onNavigate }) {
           background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
           border-right: 1px solid #e9ecef;
           box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
-          transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: width 0.3s cubic-bezier(0.4, 0, 0.0, 1);
           position: fixed;
           top: 0;
           left: 0;
@@ -192,7 +200,7 @@ export default function Navigation({ onNavigate }) {
         }
 
         .btn-sidebar-toggle {
-          background: rgba(255,255,255,0.2);
+          background: rgba(255,255,255,0.0);
           border: none;
           color: white;
           padding: 6px 10px;
@@ -399,7 +407,7 @@ export default function Navigation({ onNavigate }) {
 
           .sidebar-container.open {
             width: 280px;
-            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.0);
           }
 
           body {

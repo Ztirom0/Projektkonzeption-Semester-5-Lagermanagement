@@ -17,7 +17,7 @@ export function calculateForecast(sales, inventoryHistory, itemId, method = "mov
 
   const lastRealQuantity = history[history.length - 1].quantity;
 
-  // 2. Sales für diesen Artikel filtern
+  // 0. Sales für diesen Artikel filtern
   const itemSales = sales
     .filter(s => s.itemId === itemId)
     .sort((a, b) => new Date(a.date) - new Date(b.date));

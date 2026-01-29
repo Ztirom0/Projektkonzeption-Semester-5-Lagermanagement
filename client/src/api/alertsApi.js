@@ -1,25 +1,22 @@
 // src/api/alertsApi.js
 
-const BASE_URL = "/api";
-
-// GET /alerts
-export async function getAlerts() {
-  const res = await fetch(`${BASE_URL}/alerts`, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" }
-  });
-
-  if (!res.ok) throw new Error("Fehler beim Laden der Alerts");
-  return await res.json();
-}
-
-// GET /recommendations
-export async function getRecommendations() {
-  const res = await fetch(`${BASE_URL}/recommendations`, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" }
-  });
-
-  if (!res.ok) throw new Error("Fehler beim Laden der Empfehlungen");
-  return await res.json();
+/**
+ * Berechnet Alerts basierend auf aktuellem Bestand
+ * Ein Alert wird erzeugt, wenn der Bestand unter der Mindestmenge liegt
+ * 
+ * @param {Array} inventoryStatuses - Array von Inventory-Objekten mit quantity und minQuantity
+ * @returns {Array} Liste von Alert-Objekten
+ */
+export function calculateAlerts(inventoryStatuses) {
+  return inventoryStatuses
+    .filter(inv => inv && inv.quantity < inv.minQuantity)
+    .map(inv => ({
+      itemId: inv.itemId,
+      placeId: inv.placeId,
+      quantity: inv.quantity,
+      minQuantity: inv.minQuantity,
+      type: "CRITICAL",
+      message: `Bestand unterschritten: ${inv.quantity}/${inv.minQuantity}`,
+      severity: inv.quantity === 2 ? "CRITICAL" : "WARNING"
+    }));
 }

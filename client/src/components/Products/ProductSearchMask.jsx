@@ -1,14 +1,60 @@
 // src/components/Products/ProductSearch.jsx
 
 import { useState, useMemo } from "react";
+import { useEffect } from "react";
+import { getAllItems } from "../../api/itemsApi";
+import { getInventory } from "../../api/inventoryApi";
+import { getSales } from "../../api/salesApi";
+import { calculateAllInventoryStatuses } from "../../api/inventoryCalculations";
 
-export default function ProductSearch({ items, onSelect, onAddNew }) {
+export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [filterType, setFilterType] = useState("all");
+  const [itemsWithInventory, setItemsWithInventory] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [itemsRes, inventory, sales] = await Promise.all([
+          getAllItems(),
+          getInventory(),
+          getSales()
+        ]);
+
+        // Berechne Status für jedes Item
+        const statuses = calculateAllInventoryStatuses(itemsRes, inventory, sales);
+        
+        // Merge Items mit berechneten Status-Daten
+        const merged = itemsRes.map(item => {
+          const status = statuses.find(s => s.itemId === item.id);
+          const invEntries = inventory.filter(i => i.itemId === item.id);
+          const minQuantity = Math.max(...invEntries.map(i => i.minQuantity || 0), 0);
+          
+          return {
+            ...item,
+            currentQuantity: status?.currentQuantity ?? 0,
+            minQuantity,
+            dailySalesRate: status?.dailySalesRate ?? 0,
+            daysRemaining: status?.daysRemaining ?? 0
+          };
+        });
+        setItemsWithInventory(merged);
+      } catch (err) {
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, []);
+
+
+
 
   const filtered = useMemo(() => {
-    let result = items || [];
+    let result = itemsWithInventory || [];
 
     // Textsuche
     if (searchTerm.trim()) {
@@ -46,9 +92,18 @@ export default function ProductSearch({ items, onSelect, onAddNew }) {
           return 0;
       }
     });
-
     return result;
-  }, [items, searchTerm, sortBy, filterType]);
+  }, [itemsWithInventory, searchTerm, sortBy, filterType]);
+
+  if (loading) {
+    return (
+      <div className="text-center py-5">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Lade Produkte...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="product-search">
@@ -129,7 +184,7 @@ export default function ProductSearch({ items, onSelect, onAddNew }) {
                     >
                       <td className="fw-semibold">{item.name}</td>
                       <td>
-                        <code className="bg-light p-2 rounded">{item.sku}</code>
+                        <code className="bg-light p-0 rounded">{item.sku}</code>
                       </td>
                       <td>{item.unit}</td>
                       <td>
@@ -163,7 +218,7 @@ export default function ProductSearch({ items, onSelect, onAddNew }) {
             </table>
           </div>
           <small className="text-muted d-block mt-3">
-            {filtered.length} von {items?.length || 0} Produkten angezeigt
+            {filtered.length} von {itemsWithInventory?.length || 0} Produkten angezeigt
           </small>
         </div>
       ) : (

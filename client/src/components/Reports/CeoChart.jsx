@@ -15,7 +15,6 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
 
   // Handle method change
   const handleMethodChange = (newMethod) => {
-    console.log(`🔧 [UI] Prognose-Methode wechselt: ${method} → ${newMethod}`);
     setMethod(newMethod);
     if (onMethodChange) {
       onMethodChange(newMethod);
@@ -67,14 +66,11 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
 
   // Forecasts neu berechnen mit aktuellem method
   const computedForecasts = useMemo(() => {
-    console.log(`🔄 [CeoChart] Berechne Forecasts mit Methode: ${method}`);
     return activeItemIds.map(itemId => {
       try {
         const fc = calculateForecast(sales, inventoryHistory, itemId, method, 30);
-        console.log(`   → Item ${itemId}: ${fc.points.length} Prognose-Punkte berechnet`);
         return fc;
       } catch (err) {
-        console.warn(`   ❌ Fehler bei Item ${itemId}:`, err);
         return null;
       }
     }).filter(f => f !== null);
@@ -82,15 +78,9 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
 
   // Datasets mit useMemo - aktualisiert sich wenn sich method, selectedItemIds oder forecasts ändern
   const datasets = useMemo(() => {
-    console.log(`📊 [CeoChart] Erstelle Datasets mit ${activeItemIds.length} Items`);
     return activeItemIds.map((itemId, idx) => {
       const itemSales = sales.filter(s => s.itemId === itemId).sort((a, b) => new Date(a.date) - new Date(b.date));
       const itemHistory = inventoryHistory ? inventoryHistory.filter(h => h.itemId === itemId).sort((a, b) => new Date(a.date) - new Date(b.date)) : [];
-      
-      console.log(`\n=== Item ${itemId} Daten-Übersicht ===`);
-      console.log(`   Sales gefunden: ${itemSales.length} Einträge`);
-      console.log(`   History gefunden: ${itemHistory.length} Einträge`);
-      console.log(`   Daten-Daten: ${allDates.length} Tage (${allHistoricalDates.length} historisch + ${allDates.length - allHistoricalDates.length} Prognose)`);
       
       const forecast = computedForecasts.find(f => f.itemId === itemId);
       const item = items.find(i => i.id === itemId);
@@ -105,10 +95,6 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
       // Historische Verkaufs-Daten
       const salesData = allDates.map((d, dateIdx) => {
         const sale = itemSales.find(s => s.date === d);
-        if (!sale && dateIdx < 3) {
-          // Nur erste 3 Tage loggen um Console nicht zu spammen
-          console.log(`   [${d}] Verkauf: NULL (kein match in itemSales)`);
-        }
         return sale ? sale.soldQuantity : null;
       });
 
@@ -122,9 +108,6 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
             // Aus der Bestandsprognose den täglichen Verbrauch ablesen
             if (forecastDayIdx === 0) {
               const val = forecast.startQuantity - forecast.points[0].quantity;
-              if (dateIdx === allHistoricalDates.length) {
-                console.log(`   [${d}] Verkauf-Prognose: ${val} (from start ${forecast.startQuantity} - point ${forecast.points[0].quantity})`);
-              }
               return val;
             } else {
               const prev = forecast.points[forecastDayIdx - 1].quantity;
@@ -137,13 +120,7 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
           const recentSales = itemSales.slice(-7);
           if (recentSales.length > 0) {
             const avg = recentSales.reduce((sum, s) => sum + s.soldQuantity, 0) / recentSales.length;
-            if (dateIdx === allHistoricalDates.length) {
-              console.log(`   [${d}] Verkauf-Prognose: ${Math.round(avg)} (Fallback: 7-Tage-Durchschnitt)`);
-            }
             return Math.round(avg);
-          }
-          if (dateIdx === allHistoricalDates.length) {
-            console.log(`   [${d}] Verkauf-Prognose: 0 (keine recent sales)`);
           }
           return 0;
         }
@@ -153,9 +130,6 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
       // Kombinierte Verkaufs-Linie
       const combinedSalesData = allDates.map((d, i) => {
         const value = salesData[i] !== null ? salesData[i] : salesForecastData[i];
-        if (i < 3 && value === null) {
-          console.log(`   [${d}] LÜCKE: salesData=null AND salesForecastData=null`);
-        }
         return value;
       });
 
@@ -166,9 +140,9 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
         borderColor: salesColor,
         backgroundColor: `${salesColor}15`,
         fill: false,
-        tension: 0.4,
-        pointRadius: 0,
-        borderWidth: 2.5,
+        tension: 0.35,
+        pointRadius: 2,
+        borderWidth: 3,
         spanGaps: false,
         yAxisID: 'y'
       };
@@ -180,9 +154,6 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
       // Historische Bestandsdaten
       const inventoryData = allDates.map((d, dateIdx) => {
         const inv = itemHistory.find(h => h.date === d);
-        if (!inv && dateIdx < 3) {
-          console.log(`   [${d}] Bestand: NULL (kein match in itemHistory)`);
-        }
         return inv ? inv.quantity : null;
       });
 
@@ -194,13 +165,7 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
           
           if (forecast.points && forecast.points.length > forecastDayIdx) {
             const val = forecast.points[forecastDayIdx].quantity;
-            if (dateIdx === allHistoricalDates.length) {
-              console.log(`   [${d}] Bestand-Prognose: ${val} (from forecast.points)`);
-            }
             return val;
-          }
-          if (dateIdx === allHistoricalDates.length) {
-            console.log(`   [${d}] Bestand-Prognose: NULL (no forecast.points)`);
           }
           return null;
         }
@@ -210,9 +175,6 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
       // Kombinierte Bestands-Linie (durchgehend!)
       const combinedInventoryData = allDates.map((d, i) => {
         const value = inventoryData[i] !== null ? inventoryData[i] : inventoryForecastData[i];
-        if (i < 3 && value === null) {
-          console.log(`   [${d}] LÜCKE BESTAND: inventoryData=null AND inventoryForecastData=null`);
-        }
         return value;
       });
 
@@ -222,9 +184,9 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
         borderColor: inventoryColor,
         backgroundColor: `${inventoryColor}10`,
         fill: false,
-        tension: 0.4,
-        pointRadius: 0,
-        borderWidth: 2.5,
+        tension: 0.35,
+        pointRadius: 2,
+        borderWidth: 3,
         spanGaps: false,
         yAxisID: 'y1'
       };
