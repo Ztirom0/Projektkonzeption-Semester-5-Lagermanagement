@@ -17,6 +17,6 @@ export function calculateAlerts(inventoryStatuses) {
       minQuantity: inv.minQuantity,
       type: "CRITICAL",
       message: `Bestand unterschritten: ${inv.quantity}/${inv.minQuantity}`,
-      severity: inv.quantity === 2 ? "CRITICAL" : "WARNING"
+      severity: inv.quantity === 0 ? "CRITICAL" : "WARNING"
     }));
 }

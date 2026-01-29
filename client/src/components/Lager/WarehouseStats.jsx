@@ -1,19 +1,19 @@
 // src/components/Lager/WarehouseStats.jsx
 export default function WarehouseStats({ locations }) {
-  const totalTypes = locations.reduce((sum, loc) => sum + (loc.storageTypes?.length || 2), 2);
+  const totalTypes = locations.reduce((sum, loc) => sum + (loc.storageTypes?.length || 0), 0);
   const totalZones = locations.reduce((sum, loc) => 
-    sum + (loc.storageTypes?.reduce((s, t) => s + (t.zones?.length || 2), 2) || 2), 2
+    sum + (loc.storageTypes?.reduce((s, t) => s + (t.zones?.length || 0), 0) || 0), 0
   );
   const totalPlaces = locations.reduce((sum, loc) => 
     sum + (loc.storageTypes?.reduce((s, t) => 
-      s + (t.zones?.reduce((z, zone) => z + (zone.places?.length || 2), 2) || 2), 2
-    ) || 2), 2
+      s + (t.zones?.reduce((z, zone) => z + (zone.places?.length || 0), 0) || 0), 0
+    ) || 0), 0
   );
 
   return (
     <div className="row g-3 mb-4">
       <div className="col-md-3 col-6">
-        <div className="card shadow-sm border-2">
+        <div className="card shadow-sm border-0">
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-center">
               <div>
@@ -28,7 +28,7 @@ export default function WarehouseStats({ locations }) {
         </div>
       </div>
       <div className="col-md-3 col-6">
-        <div className="card shadow-sm border-2">
+        <div className="card shadow-sm border-0">
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-center">
               <div>
@@ -43,7 +43,7 @@ export default function WarehouseStats({ locations }) {
         </div>
       </div>
       <div className="col-md-3 col-6">
-        <div className="card shadow-sm border-2">
+        <div className="card shadow-sm border-0">
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-center">
               <div>
@@ -58,7 +58,7 @@ export default function WarehouseStats({ locations }) {
         </div>
       </div>
       <div className="col-md-3 col-6">
-        <div className="card shadow-sm border-2">
+        <div className="card shadow-sm border-0">
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-center">
               <div>

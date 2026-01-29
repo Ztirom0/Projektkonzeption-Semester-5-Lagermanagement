@@ -12,6 +12,7 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
   const [showSales, setShowSales] = useState(true);
   const [showInventory, setShowInventory] = useState(true);
   const [showForecast, setShowForecast] = useState(true);
+  const [itemsOpen, setItemsOpen] = useState(true);
 
   // Handle method change
   const handleMethodChange = (newMethod) => {
@@ -367,29 +368,40 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
       <div className="row mb-4 g-3">
         {/* Artikel Multi-Select */}
         <div className="col-lg-6">
-          <label className="form-label fw-bold small text-uppercase text-muted mb-2">📦 Artikel auswählen</label>
-          <div className="border rounded p-3" style={{ maxHeight: "200px", overflowY: "auto", backgroundColor: "#f9f9f9" }}>
-            {uniqueItems.map(itemId => {
-              const item = items.find(i => i.id === itemId);
-              const itemName = item ? item.name : `Artikel ${itemId}`;
-              const isSelected = activeItemIds.includes(itemId);
-              return (
-                <div key={itemId} className="form-check mb-2">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id={`item-${itemId}`}
-                    checked={isSelected}
-                    onChange={() => toggleItemSelection(itemId)}
-                  />
-                  <label className="form-check-label cursor-pointer" htmlFor={`item-${itemId}`}>
-                    <span className="fw-500">{itemName}</span>
-                    <span className="text-muted small ms-2">(SKU: {item?.sku})</span>
-                  </label>
-                </div>
-              );
-            })}
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <label className="form-label fw-bold small text-uppercase text-muted mb-0">📦 Artikel auswählen</label>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-secondary"
+              onClick={() => setItemsOpen(!itemsOpen)}
+            >
+              {itemsOpen ? "Einklappen" : "Ausklappen"}
+            </button>
           </div>
+          {itemsOpen && (
+            <div className="border rounded p-3" style={{ maxHeight: "200px", overflowY: "auto", backgroundColor: "#f9f9f9" }}>
+              {uniqueItems.map(itemId => {
+                const item = items.find(i => i.id === itemId);
+                const itemName = item ? item.name : `Artikel ${itemId}`;
+                const isSelected = activeItemIds.includes(itemId);
+                return (
+                  <div key={itemId} className="form-check mb-2">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id={`item-${itemId}`}
+                      checked={isSelected}
+                      onChange={() => toggleItemSelection(itemId)}
+                    />
+                    <label className="form-check-label cursor-pointer" htmlFor={`item-${itemId}`}>
+                      <span className="fw-500">{itemName}</span>
+                      <span className="text-muted small ms-2">(SKU: {item?.sku})</span>
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Prognosemethode */}

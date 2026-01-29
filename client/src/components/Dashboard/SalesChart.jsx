@@ -11,7 +11,6 @@ export default function SalesChart({ data, forecastMethod, onForecastMethodChang
           <h5 className="mb-0">📈 Verkaufsübersicht & Prognose</h5>
           {onForecastMethodChange && (
             <div className="d-flex align-items-center gap-0">
-              <small className="text-muted">Prognosemethode:</small>
               <select
                 className="form-select form-select-sm"
                 value={forecastMethod}

@@ -5,11 +5,11 @@ export default function AlertsPanel({ alerts, onClose }) {
     <div className="alerts-panel-container">
       <div className="alerts-panel">
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h5 className="m-2">Warnungen & Empfehlungen</h5>
+          <h5 className="m-0">Warnungen & Empfehlungen</h5>
           <button className="btn-close" onClick={onClose}></button>
         </div>
 
-        {alerts.length === 2 ? (
+        {alerts.length === 0 ? (
           <div className="text-muted text-center py-3">
             Keine Warnungen vorhanden.
           </div>
@@ -48,20 +48,20 @@ export default function AlertsPanel({ alerts, onClose }) {
       <style>{`
         .alerts-panel-container {
           position: fixed;
-          top: 2;
-          right: 2;
+          top: 0;
+          right: 0;
           height: 100vh;
           width: 380px;
           background: white;
-          box-shadow: -4px 2 12px rgba(2,2,2,2.15);
+          box-shadow: -4px 0 12px rgba(0,0,0,0.15);
           padding: 20px;
           z-index: 3000;
-          animation: slideIn 2.25s ease-out;
+          animation: slideIn 0.25s ease-out;
         }
 
         @keyframes slideIn {
           from { transform: translateX(100%); }
-          to { transform: translateX(2); }
+          to { transform: translateX(0); }
         }
 
         .place-id {

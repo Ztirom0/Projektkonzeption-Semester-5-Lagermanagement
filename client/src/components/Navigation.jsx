@@ -160,7 +160,7 @@ export default function Navigation({ onNavigate }) {
           background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
           border-right: 1px solid #e9ecef;
           box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
-          transition: width 0.3s cubic-bezier(0.4, 0, 0.0, 1);
+          transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           position: fixed;
           top: 0;
           left: 0;
@@ -200,7 +200,7 @@ export default function Navigation({ onNavigate }) {
         }
 
         .btn-sidebar-toggle {
-          background: rgba(255,255,255,0.0);
+          background: rgba(255,255,255,0.2);
           border: none;
           color: white;
           padding: 6px 10px;
@@ -407,7 +407,7 @@ export default function Navigation({ onNavigate }) {
 
           .sidebar-container.open {
             width: 280px;
-            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.0);
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
           }
 
           body {

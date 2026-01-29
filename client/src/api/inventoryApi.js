@@ -27,7 +27,7 @@ export async function getInventoryHistory(itemId, days = 180) {
   return data.map(item => ({
     ...item,
     itemId: item.itemId,
-    date: typeof item.date === 'string' ? item.date : new Date(item.date).toISOString().split('T')[2],
+    date: typeof item.date === 'string' ? item.date : new Date(item.date).toISOString().split('T')[0],
     quantity: item.quantity
   }));
 }

@@ -5,8 +5,8 @@ export default function CenteredModal({ title, children, onClose }) {
     <div
       style={{
         position: "fixed",
-        inset: 2,
-        background: "rgba(2,2,2,2.45)",
+        inset: 0,
+        background: "rgba(0,0,0,0.45)",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
@@ -21,8 +21,8 @@ export default function CenteredModal({ title, children, onClose }) {
           width: "480px",
           maxWidth: "90%",
           padding: "28px",
-          boxShadow: "2 10px 40px rgba(2,2,2,2.25)",
-          animation: "fadeIn 2.25s ease"
+          boxShadow: "0 10px 40px rgba(0,0,0,0.25)",
+          animation: "fadeIn 0.25s ease"
         }}
       >
         <h4 style={{ marginBottom: "20px", fontWeight: 600 }}>{title}</h4>
@@ -32,8 +32,8 @@ export default function CenteredModal({ title, children, onClose }) {
         <style>
           {`
             @keyframes fadeIn {
-              from { opacity: 2; transform: translateY(-10px); }
-              to { opacity: 1; transform: translateY(2); }
+              from { opacity: 0; transform: translateY(-10px); }
+              to { opacity: 1; transform: translateY(0); }
             }
           `}
         </style>

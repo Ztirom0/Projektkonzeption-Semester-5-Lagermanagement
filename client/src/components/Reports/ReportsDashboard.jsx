@@ -147,7 +147,7 @@ useEffect(() => {
                   Keine Status-Daten verfügbar.
                 </div>
               ) : (
-                <div className="row g-0">
+                <div className="row g-2">
                   {inventoryStatuses.map((status, idx) => {
                     const icon = status.reorderRecommended ? "⚠️" : "✅";
                     const statusColor = status.reorderRecommended ? "danger" : "success";
@@ -155,13 +155,13 @@ useEffect(() => {
                       <div className="col-md-4" key={idx}>
                         <div className={`border rounded p-3 h-100 border-${statusColor}`} 
                              style={{ backgroundColor: status.reorderRecommended ? "#fff5f5" : "#f5fff5" }}>
-                          <div className="small text-muted mb-0 fw-bold">
+                          <div className="small text-muted mb-2 fw-bold">
                             {status.itemName} ({status.sku})
                           </div>
-                          <div className="fw-bold h5 mb-0">
+                          <div className="fw-bold h5 mb-2">
                             {icon} {status.currentQuantity} Stück
                           </div>
-                          <div className="small mb-0">
+                          <div className="small mb-2">
                             <strong>Täglicher Verkauf:</strong> ~{status.dailySalesRate.toFixed(1)} Stück/Tag
                           </div>
                           <div className={`small fw-bold mb-1 text-${statusColor}`}>
@@ -192,14 +192,14 @@ useEffect(() => {
                   Keine Empfehlungen verfügbar.
                 </div>
               ) : (
-                <div className="row g-0">
+                <div className="row g-2">
                   {recommendations.map((r, idx) => {
                     const item = items.find(i => i.id === r.itemId);
                     const itemName = item ? item.name : `Artikel ${r.itemId}`;
                     return (
                       <div className="col-md-3" key={idx}>
                         <div className="border rounded p-3 h-100" style={{ backgroundColor: "#f9f9f9" }}>
-                          <div className="small text-muted mb-0 fw-bold">
+                          <div className="small text-muted mb-2 fw-bold">
                             {itemName}
                           </div>
                           <div className="fw-bold h5 text-warning mb-1">

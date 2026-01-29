@@ -129,7 +129,7 @@ export default function DummyHome() {
 
         @media (max-width: 768px) {
           .app-wrapper {
-            margin-left: 2 !important;
+            margin-left: 0 !important;
           }
         }
       `}</style>
