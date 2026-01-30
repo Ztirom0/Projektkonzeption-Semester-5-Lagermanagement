@@ -86,6 +86,30 @@ public class WarehouseInitializer implements ApplicationRunner {
             locationMap.put(d.name, loc);
         }
 
+        if (data.locationStorageTypes != null) {
+        for (LocationStorageTypeData d : data.locationStorageTypes) {
+
+            Location loc = locationMap.get(d.location);
+            if (loc == null) {
+                System.out.println("WARN: Location not found: " + d.location);
+                continue;
+            }
+
+            for (String stName : d.storageTypes) {
+                StorageType st = storageTypeMap.get(stName);
+                if (st == null) {
+                    System.out.println("WARN: StorageType not found: " + stName);
+                    continue;
+                }
+
+                loc.getStorageTypes().add(st);
+            }
+
+            locationRepository.save(loc);
+        }
+    }
+
+
         Map<String, Zone> zoneMap = new HashMap<>();
         for (ZoneData d : data.zones) {
             Zone zone = new Zone(d.name, categoryMap.get(d.category), storageTypeMap.get(d.storageType));

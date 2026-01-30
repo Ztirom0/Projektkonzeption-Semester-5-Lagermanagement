@@ -14,8 +14,4 @@ public class WarehouseData {
     public List<LocationStorageTypeData> locationStorageTypes;
     public List<InventoryHistoryData> inventoryHistory;
     
-    public static class LocationStorageTypeData {
-        public String location;
-        public List<String> storageTypes;
-    }
 }
