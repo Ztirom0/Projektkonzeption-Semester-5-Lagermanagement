@@ -2,6 +2,7 @@ package com.moritz.lagerverwaltungssystem.service;
 
 import com.moritz.lagerverwaltungssystem.dto.ItemDTO;
 import com.moritz.lagerverwaltungssystem.dto.PlaceDTO;
+import com.moritz.lagerverwaltungssystem.dto.PlaceDetailDTO;
 import com.moritz.lagerverwaltungssystem.dto.ZoneCategoryDTO;
 import com.moritz.lagerverwaltungssystem.dto.ZoneDTO;
 import com.moritz.lagerverwaltungssystem.entity.Item;
@@ -21,10 +22,13 @@ public class ZoneService {
 
     private final ZoneRepository zoneRepository;
     private final StorageTypeRepository storageTypeRepository;
+    private final InventoryService inventoryService;
 
-    public ZoneService(ZoneRepository zoneRepository, StorageTypeRepository storageTypeRepository) {
+    public ZoneService(ZoneRepository zoneRepository, StorageTypeRepository storageTypeRepository,
+                       InventoryService inventoryService) {
         this.zoneRepository = zoneRepository;
         this.storageTypeRepository = storageTypeRepository;
+        this.inventoryService = inventoryService;
     }
 
     public List<ZoneDTO> getZonesByStorageType(Long storageTypeId) {
@@ -35,7 +39,7 @@ public class ZoneService {
                         zone.getName(),
                         mapCategory(zone.getCategory()), // Entity → DTO
                         zone.getPlaces().stream()
-                                .map(this::mapPlace) // Entity → DTO
+                                .map(this::mapPlaceWithDetails) // Entity → DTO with details
                                 .collect(Collectors.toList())
                 ))
                 .collect(Collectors.toList());
@@ -56,13 +60,10 @@ public class ZoneService {
     }
 
     // Hilfsmethoden für Mapping
-    private PlaceDTO mapPlace(Place place) {
-        Item item = place.getItem();
-        ItemDTO itemDTO = item != null
-                ? new ItemDTO(item.getId(), item.getName(), item.getSku(), item.getUnit(), item.getMinQuantity())
-                : null;
-
-        return new PlaceDTO(place.getId(), place.getCode(), place.getCapacity(), itemDTO, place.getQuantity());
+    private PlaceDTO mapPlaceWithDetails(Place place) {
+        // Für ZoneDTO verwenden wir weiterhin einfache PlaceDTO
+        // Die Detail-Info wird über einen separaten Endpoint geholt
+        return new PlaceDTO(place.getId(), place.getCode(), place.getCapacity());
     }
 
     private ZoneCategoryDTO mapCategory(ZoneCategory category) {

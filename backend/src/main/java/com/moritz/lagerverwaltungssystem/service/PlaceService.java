@@ -26,66 +26,33 @@ public class PlaceService {
         this.itemRepository = itemRepository;
     }
 
-    public PlaceDTO assignItemToPlace(Long placeId, PlaceDTO dto) {
-    Place place = placeRepository.findById(placeId)
-            .orElseThrow(() -> new RuntimeException("Place not found"));
+    public PlaceDTO assignItemToPlace(Long placeId, Long itemId, Integer quantity) {
+        Place place = placeRepository.findById(placeId)
+                .orElseThrow(() -> new RuntimeException("Place not found"));
 
-    // Item aus DB holen
-    Item item = itemRepository.findById(dto.getItem().getId())
-            .orElseThrow(() -> new RuntimeException("Item not found"));
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new RuntimeException("Item not found"));
 
-    place.setItem(item);
-    place.setQuantity(dto.getQuantity());
+        // Inventory-Eintrag erstellen/aktualisieren über InventoryService
+        // Die Item- und Quantity-Zuordnung erfolgt über die Inventory-Tabelle
 
-    Place saved = placeRepository.save(place);
-
-    // Entity → DTO konvertieren
-    ItemDTO itemDTO = new ItemDTO(
-            item.getId(),
-            item.getName(),
-            item.getSku(),
-            item.getUnit(),
-            item.getMinQuantity()
-    );
-
-    return new PlaceDTO(
-            saved.getId(),
-            saved.getCode(),
-            saved.getCapacity(),
-            itemDTO,                // hier statt saved.getItem()
-            saved.getQuantity()
-    );
-}
+        return new PlaceDTO(
+                place.getId(),
+                place.getCode(),
+                place.getCapacity()
+        );
+    }
 
 public PlaceDTO addPlace(Long zoneId, PlaceDTO dto) {
     Zone zone = zoneRepository.findById(zoneId)
             .orElseThrow(() -> new RuntimeException("Zone not found"));
 
     Place place = new Place(dto.getCode(), dto.getCapacity(), zone);
-    place.setQuantity(dto.getQuantity());
-
-    // Falls ein Item mitgegeben wird, konvertieren
-    if (dto.getItem() != null) {
-        Item item = itemRepository.findById(dto.getItem().getId())
-                .orElseThrow(() -> new RuntimeException("Item not found"));
-        place.setItem(item);
-    }
-
     Place saved = placeRepository.save(place);
-
-    ItemDTO itemDTO = saved.getItem() != null
-            ? new ItemDTO(saved.getItem().getId(),
-                          saved.getItem().getName(),
-                          saved.getItem().getSku(),
-                          saved.getItem().getUnit(),
-                          saved.getItem().getMinQuantity())
-            : null;
 
     return new PlaceDTO(saved.getId(),
                         saved.getCode(),
-                        saved.getCapacity(),
-                        itemDTO,
-                        saved.getQuantity());
+                        saved.getCapacity());
 }
 
 

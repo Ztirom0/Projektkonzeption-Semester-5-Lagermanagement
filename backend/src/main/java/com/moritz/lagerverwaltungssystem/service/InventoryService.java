@@ -3,6 +3,8 @@ package com.moritz.lagerverwaltungssystem.service;
 import com.moritz.lagerverwaltungssystem.dto.InventoryDTO;
 import com.moritz.lagerverwaltungssystem.dto.InventoryHistoryDTO;
 import com.moritz.lagerverwaltungssystem.dto.InventoryStatusDTO;
+import com.moritz.lagerverwaltungssystem.dto.PlaceDetailDTO;
+import com.moritz.lagerverwaltungssystem.dto.PlaceInventoryItemDTO;
 import com.moritz.lagerverwaltungssystem.entity.Inventory;
 import com.moritz.lagerverwaltungssystem.entity.InventoryHistory;
 import com.moritz.lagerverwaltungssystem.entity.Item;
@@ -88,6 +90,13 @@ public class InventoryService {
                 .mapToInt(Inventory::getQuantity)
                 .sum();
 
+        // Get minimum quantity from first inventory record (should be same for all places of same item)
+        Integer minQuantity = inventoryRepository.findAll().stream()
+                .filter(inv -> inv.getItem().getId().equals(itemId))
+                .findFirst()
+                .map(Inventory::getMinQuantity)
+                .orElse(0);
+
         // Get sales from last 7 days to calculate daily rate
         LocalDate sevenDaysAgo = LocalDate.now().minusDays(7);
         List<Sale> recentSales = saleRepository.findByItemIdOrderByDateAsc(itemId).stream()
@@ -98,14 +107,17 @@ public class InventoryService {
                 .mapToInt(Sale::getSoldQuantity)
                 .sum() / 7.0; // Average over 7 days
 
-        // Calculate days remaining
+        // Calculate days remaining until minimum quantity
         int daysRemaining = 0;
         if (dailySalesRate > 0) {
-            daysRemaining = (int) Math.floor(currentQuantity / dailySalesRate);
+            int quantityAboveMin = Math.max(0, currentQuantity - minQuantity);
+            daysRemaining = (int) Math.floor(quantityAboveMin / dailySalesRate);
         }
 
-        // Reorder recommended if less than lead time days remaining
-        boolean reorderRecommended = daysRemaining <= REORDER_LEAD_TIME_DAYS;
+        // Reorder recommended if:
+        // 1. Current quantity is already at or below minimum, OR
+        // 2. Days remaining until minimum quantity is less than lead time
+        boolean reorderRecommended = currentQuantity <= minQuantity || daysRemaining <= REORDER_LEAD_TIME_DAYS;
         LocalDate reorderDate = LocalDate.now().plusDays(Math.max(0, daysRemaining - REORDER_LEAD_TIME_DAYS));
 
         return new InventoryStatusDTO(
@@ -117,6 +129,47 @@ public class InventoryService {
                 daysRemaining,
                 reorderRecommended,
                 reorderDate
+        );
+    }
+
+    public PlaceDetailDTO getPlaceDetails(Long placeId) {
+        // Verify place exists
+        Place place = placeRepository.findById(placeId)
+                .orElseThrow(() -> new RuntimeException("Place not found"));
+
+        // Get all inventory items for this place
+        List<Inventory> placeInventories = inventoryRepository.findAll().stream()
+                .filter(inv -> inv.getPlace().getId().equals(placeId))
+                .toList();
+
+        // Calculate used capacity
+        Integer usedCapacity = placeInventories.stream()
+                .mapToInt(Inventory::getQuantity)
+                .sum();
+
+        // Calculate utilization percentage
+        Double utilizationPercentage = place.getCapacity() > 0
+                ? (usedCapacity * 100.0) / place.getCapacity()
+                : 0.0;
+
+        // Map inventory items to DTOs
+        List<PlaceInventoryItemDTO> items = placeInventories.stream()
+                .map(inv -> new PlaceInventoryItemDTO(
+                        inv.getItem().getId(),
+                        inv.getItem().getName(),
+                        inv.getItem().getSku(),
+                        inv.getQuantity(),
+                        inv.getMinQuantity()
+                ))
+                .collect(Collectors.toList());
+
+        return new PlaceDetailDTO(
+                place.getId(),
+                place.getCode(),
+                place.getCapacity(),
+                usedCapacity,
+                utilizationPercentage,
+                items
         );
     }
 }
