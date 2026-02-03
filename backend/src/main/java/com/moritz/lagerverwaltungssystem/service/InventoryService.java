@@ -44,26 +44,34 @@ public class InventoryService {
     public List<InventoryDTO> getAllInventory() {
         return inventoryRepository.findAll().stream()
                 .map(inv -> new InventoryDTO(
-                        inv.getId(),
-                        inv.getItem().getId(),
                         inv.getPlace().getId(),
-                        inv.getQuantity(),
-                        inv.getMinQuantity()
+                        inv.getItem().getId(),
+                        inv.getQuantity()
                 ))
                 .collect(Collectors.toList());
     }
 
-    public InventoryDTO createInventory(Long placeId, Long itemId, int quantity, int minQuantity) {
+    public InventoryDTO createInventory(Long placeId, Long itemId, int quantity) {
+        System.out.println("📦 createInventory: placeId=" + placeId + ", itemId=" + itemId + ", quantity=" + quantity);
+
         Place place = placeRepository.findById(placeId)
                 .orElseThrow(() -> new RuntimeException("Place not found"));
         
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new RuntimeException("Item not found"));
 
-        Inventory inventory = new Inventory(item, place, quantity, minQuantity);
+        // Check if place already has inventory
+        if (place.getInventory() != null) {
+            System.out.println("⚠️ Place already has inventory!");
+            throw new RuntimeException("Place already has an item assigned");
+        }
+
+        Inventory inventory = new Inventory(place, item, quantity);
         Inventory saved = inventoryRepository.save(inventory);
 
-        return new InventoryDTO(saved.getId(), item.getId(), place.getId(), quantity, minQuantity);
+        System.out.println("✅ Inventory saved with id=" + saved.getId());
+
+        return new InventoryDTO(saved.getPlace().getId(), item.getId(), quantity);
     }
 
     public List<InventoryHistoryDTO> getInventoryHistory(Long itemId, int days) {
@@ -90,12 +98,8 @@ public class InventoryService {
                 .mapToInt(Inventory::getQuantity)
                 .sum();
 
-        // Get minimum quantity from first inventory record (should be same for all places of same item)
-        Integer minQuantity = inventoryRepository.findAll().stream()
-                .filter(inv -> inv.getItem().getId().equals(itemId))
-                .findFirst()
-                .map(Inventory::getMinQuantity)
-                .orElse(0);
+        // Get minimum quantity from item
+        Integer minQuantity = item.getMinQuantity();
 
         // Get sales from last 7 days to calculate daily rate
         LocalDate sevenDaysAgo = LocalDate.now().minusDays(7);
@@ -159,7 +163,7 @@ public class InventoryService {
                         inv.getItem().getName(),
                         inv.getItem().getSku(),
                         inv.getQuantity(),
-                        inv.getMinQuantity()
+                        inv.getItem().getMinQuantity()
                 ))
                 .collect(Collectors.toList());
 

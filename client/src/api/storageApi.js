@@ -40,9 +40,9 @@ export async function getStorageTypes() {
   return await res.json();
 }
 
-// POST /storage-types
-export async function createStorageType(data) {
-  const res = await fetch(`${BASE_URL}/storage-types`, {
+// POST /locations/{locationId}/storage-types
+export async function createStorageType(locationId, data) {
+  const res = await fetch(`${BASE_URL}/locations/${locationId}/storage-types`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data)
@@ -51,16 +51,8 @@ export async function createStorageType(data) {
   return await res.json();
 }
 
-// POST /locations/{id}/storage-types
-export async function assignStorageTypeToLocation(locationId, storageTypeId) {
-  const res = await fetch(`${BASE_URL}/locations/${locationId}/storage-types`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ storageTypeId })
-  });
-  if (!res.ok) throw new Error("Fehler beim Zuweisen des Lagertyps");
-  return await res.json();
-}
+// POST /locations/{id}/storage-types (removed - now part of createStorageType)
+// This endpoint is no longer needed as assignment happens automatically
 
 // ---------- Zonen-Kategorien ----------
 
@@ -108,9 +100,9 @@ export async function createZone(storageTypeId, { name, categoryId }) {
   return await res.json();
 }
 
-// POST /zone/{id}/places
+// POST /zones/{zoneId}/places
 export async function createPlace(zoneId, { code, capacity }) {
-  const res = await fetch(`${BASE_URL}/zone/${zoneId}/places`, {
+  const res = await fetch(`${BASE_URL}/zones/${zoneId}/places`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ code, capacity })
@@ -122,12 +114,24 @@ export async function createPlace(zoneId, { code, capacity }) {
 // ---------- Artikelzuweisung ----------
 
 // POST /places/{id}/items
-export async function assignItemToPlace(placeId, { itemId, quantity, minQuantity }) {
+export async function assignItemToPlace(placeId, { itemId, quantity }) {
+  console.log(`📤 API Call: POST /places/${placeId}/items`, { itemId, quantity });
+  
   const res = await fetch(`${BASE_URL}/places/${placeId}/items`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ itemId, quantity, minQuantity })
+    body: JSON.stringify({ itemId, quantity })
   });
-  if (!res.ok) throw new Error("Fehler beim Zuweisen des Artikels zum Platz");
-  return await res.json();
+
+  console.log(`📥 Response Status: ${res.status}`, { ok: res.ok });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("❌ API Error:", errorText);
+    throw new Error("Fehler beim Zuweisen des Artikels zum Platz");
+  }
+
+  const data = await res.json();
+  console.log("✅ API Response:", data);
+  return data;
 }

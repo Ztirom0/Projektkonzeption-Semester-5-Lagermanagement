@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import CenteredModal from "../UI/CenteredModal";
-import { assignStorageTypeToLocation, createStorageType } from "../../api/storageApi";
+import { createStorageType } from "../../api/storageApi";
 
 export default function AddStorageTypeModal({ location, onCreated, onClose }) {
   const [name, setName] = useState("");
@@ -17,11 +17,10 @@ export default function AddStorageTypeModal({ location, onCreated, onClose }) {
     try {
       setSaving(true);
       setError(null);
-      const newType = await createStorageType({
+      const newType = await createStorageType(location.id, {
         name: name.trim(),
         description: description.trim()
       });
-      await assignStorageTypeToLocation(location.id, newType.id);
       onCreated?.(location.id, { ...newType, zones: [] });
       onClose();
     } catch (err) {

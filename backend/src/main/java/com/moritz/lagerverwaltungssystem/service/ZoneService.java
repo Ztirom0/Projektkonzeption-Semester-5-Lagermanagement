@@ -59,10 +59,24 @@ public class ZoneService {
         return new ZoneDTO(saved.getId(), saved.getName(), mapCategory(saved.getCategory()), List.of());
     }
 
+    public ZoneDTO createZoneAndAssign(Long storageTypeId, ZoneDTO dto) {
+        return addZone(storageTypeId, dto);
+    }
+
     // Hilfsmethoden für Mapping
     private PlaceDTO mapPlaceWithDetails(Place place) {
-        // Für ZoneDTO verwenden wir weiterhin einfache PlaceDTO
-        // Die Detail-Info wird über einen separaten Endpoint geholt
+        // Wenn Place ein Inventory hat, mit Item-Details zurückgeben
+        if (place.getInventory() != null) {
+            return new PlaceDTO(
+                place.getId(), 
+                place.getCode(), 
+                place.getCapacity(),
+                place.getInventory().getItem().getId(),
+                place.getInventory().getItem().getName(),
+                place.getInventory().getQuantity()
+            );
+        }
+        // Sonst nur Basis-Info
         return new PlaceDTO(place.getId(), place.getCode(), place.getCapacity());
     }
 

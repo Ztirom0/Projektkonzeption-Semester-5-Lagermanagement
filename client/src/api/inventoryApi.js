@@ -33,11 +33,11 @@ export async function getInventoryHistory(itemId, days = 180) {
 }
 
 // POST /inventory
-export async function createInventory(placeId, itemId, quantity, minQuantity) {
+export async function createInventory(placeId, itemId, quantity) {
   const res = await fetch(`${BASE_URL}/inventory`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ placeId, itemId, quantity, minQuantity })
+    body: JSON.stringify({ placeId, itemId, quantity })
   });
 
   if (!res.ok) throw new Error("Fehler beim Erstellen des Bestandes");

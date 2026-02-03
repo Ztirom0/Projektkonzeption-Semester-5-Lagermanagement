@@ -100,12 +100,6 @@ useEffect(() => {
   return (
     <div className="reports-dashboard">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h1 className="h3 mb-1">📊 CEO-Dashboard: Prognosen & Analysen</h1>
-          <p className="text-muted mb-0">
-            Historische Verkäufe, Nachfrageprognosen mit verschiedenen Methoden und intelligente Nachbestell-Empfehlungen.
-          </p>
-        </div>
         <button className="btn btn-outline-secondary" onClick={onBack}>
           ⬅ Zur Übersicht
         </button>
@@ -128,6 +122,7 @@ useEffect(() => {
               forecasts={forecasts} 
               recommendations={recommendations}
               items={items}
+              inventoryStatuses={inventoryStatuses}
               forecastMethod={forecastMethod}
               onMethodChange={setForecastMethod}
             />
@@ -141,7 +136,7 @@ useEffect(() => {
         <div className="col-12">
           <div className="card shadow-sm border-0">
             <div className="card-body">
-              <h5 className="card-title mb-3">📦 Bestandsstatus & Verfügbarkeit</h5>
+              <h2 className="card-title mb-3">Bestandsstatus & Verfügbarkeit</h2>
               {inventoryStatuses.length === 0 ? (
                 <div className="text-muted small">
                   Keine Status-Daten verfügbar.
@@ -186,7 +181,7 @@ useEffect(() => {
         <div className="col-12">
           <div className="card shadow-sm border-0">
             <div className="card-body">
-              <h5 className="card-title mb-3">📦 Nachbestell-Empfehlungen</h5>
+              <h2 className="card-title mb-3"> Nachbestell-Empfehlungen</h2>
               {recommendations.length === 0 ? (
                 <div className="text-muted small">
                   Keine Empfehlungen verfügbar.
@@ -203,7 +198,7 @@ useEffect(() => {
                             {itemName}
                           </div>
                           <div className="fw-bold h5 text-warning mb-1">
-                            {r.recommendedOrder} Stück
+                            {r.recommendedQuantity} Stück
                           </div>
                           <div className="small text-success">
                             {r.reason}

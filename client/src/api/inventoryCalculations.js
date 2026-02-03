@@ -13,7 +13,7 @@ export function calculateInventoryStatus(item, inventoryList, sales) {
   // 1. Aktuellen Bestand summieren (über alle Lagerorte)
   const itemInventories = inventoryList.filter(inv => inv.itemId === item.id);
   const currentQuantity = itemInventories.reduce((sum, inv) => sum + (inv.quantity || 0), 0);
-  const minQuantity = Math.max(...itemInventories.map(inv => inv.minQuantity || 0), 0);
+  const minQuantity = item.minQuantity || 0;
 
   // 0. Finde das LETZTE Datum in allen Sales
   let latestDate = new Date();

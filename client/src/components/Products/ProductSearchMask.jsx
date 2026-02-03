@@ -17,11 +17,12 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
   useEffect(() => {
     async function load() {
       try {
-        const [itemsRes, inventory, sales] = await Promise.all([
-          getAllItems(),
+        const [inventory, sales] = await Promise.all([
           getInventory(),
           getSales()
         ]);
+
+        const itemsRes = itemsProp && itemsProp.length > 0 ? itemsProp : await getAllItems();
 
         // Berechne Status für jedes Item
         const statuses = calculateAllInventoryStatuses(itemsRes, inventory, sales);
@@ -29,8 +30,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
         // Merge Items mit berechneten Status-Daten
         const merged = itemsRes.map(item => {
           const status = statuses.find(s => s.itemId === item.id);
-          const invEntries = inventory.filter(i => i.itemId === item.id);
-          const minQuantity = Math.max(...invEntries.map(i => i.minQuantity || 0), 0);
+          const minQuantity = item.minQuantity ?? 0;
           
           return {
             ...item,
@@ -48,7 +48,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
     }
 
     load();
-  }, []);
+  }, [itemsProp]);
 
 
 
@@ -137,7 +137,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
           >
             <option value="all">Alle Produkte</option>
             <option value="low-stock">⚠️ Niedriger Bestand</option>
-            <option value="out-of-stock">❌ Ausverkauft</option>
+            <option value="out-of-stock">Ausverkauft</option>
           </select>
         </div>
         <div className="col-md-6">
@@ -193,7 +193,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
                       <td>{item.minQuantity}</td>
                       <td>
                         {isEmpty ? (
-                          <span className="badge bg-danger">❌ Ausverkauft</span>
+                          <span className="badge bg-danger">Ausverkauft</span>
                         ) : isLow ? (
                           <span className="badge bg-warning text-dark">⚠️ Niedrig</span>
                         ) : (
@@ -230,7 +230,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
             </>
           ) : (
             <>
-              <h6>📦 Keine Produkte vorhanden</h6>
+              <h6>Keine Produkte vorhanden</h6>
               <p className="text-muted mb-3">Erstellen Sie das erste Produkt um zu starten</p>
             </>
           )}

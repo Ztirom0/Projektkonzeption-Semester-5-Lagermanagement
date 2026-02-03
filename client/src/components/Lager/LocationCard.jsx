@@ -5,7 +5,8 @@ export default function LocationCard({
   onToggle,
   onAddType,
   onAddZone,
-  onAddPlace
+  onAddPlace,
+  onAssignItem
 }) {
   return (
     <div className="card mb-3 shadow-sm">
@@ -55,6 +56,7 @@ export default function LocationCard({
                   type={type}
                   onAddZone={onAddZone}
                   onAddPlace={onAddPlace}
+                  onAssignItem={onAssignItem}
                 />
               ))}
             </div>
@@ -73,7 +75,7 @@ export default function LocationCard({
   );
 }
 
-function StorageTypeSection({ type, onAddZone, onAddPlace }) {
+function StorageTypeSection({ type, onAddZone, onAddPlace, onAssignItem }) {
   return (
     <div className="mb-4">
       <div className="d-flex align-items-center justify-content-between mb-0">
@@ -112,6 +114,7 @@ function StorageTypeSection({ type, onAddZone, onAddPlace }) {
                     key={zone.id}
                     zone={zone}
                     onAddPlace={onAddPlace}
+                    onAssignItem={onAssignItem}
                   />
                 ))}
               </tbody>
@@ -130,7 +133,7 @@ function getUtilization(quantity, capacity) {
   return Math.min(100, Math.round((safeQuantity / safeCapacity) * 100));
 }
 
-function ZoneRow({ zone, onAddPlace }) {
+function ZoneRow({ zone, onAddPlace, onAssignItem }) {
   const places = zone.places || [];
   const totalCapacity = places.reduce((sum, p) => sum + (Number(p.capacity) || 0), 0);
   const totalQuantity = places.reduce((sum, p) => sum + (Number(p.quantity) || 0), 0);
@@ -159,15 +162,29 @@ function ZoneRow({ zone, onAddPlace }) {
               const placeUtil = getUtilization(place.quantity, place.capacity);
               const capacityLabel = place.capacity ?? 0;
               const quantityLabel = place.quantity ?? 0;
+              const isEmpty = !place.itemName && !place.item?.name && quantityLabel === 0;
               return (
                 <div key={place.id} className="small mb-1">
                   <span className="badge bg-secondary bg-opacity-10 text-secondary border me-1">
                     <i className="bi bi-diagram-3 me-1"></i>
                     {place.code}
                   </span>
-                  <span className={place.item ? "text-dark fw-medium" : "text-muted"}>
-                    {place.item?.name ?? "leer"}
-                  </span>
+                  {isEmpty ? (
+                    <button
+                      className="btn btn-sm btn-outline-primary"
+                      title="Artikel zuweisen"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        onAssignItem && onAssignItem(place);
+                      }}
+                    >
+                      <i className="bi bi-plus-circle me-1"></i>Assign Item
+                    </button>
+                  ) : (
+                    <span className="text-dark fw-medium">
+                      {place.itemName ?? place.item?.name}
+                    </span>
+                  )}
                   <span className="text-muted ms-0">
                     {quantityLabel}/{capacityLabel} ({placeUtil}%)
                   </span>

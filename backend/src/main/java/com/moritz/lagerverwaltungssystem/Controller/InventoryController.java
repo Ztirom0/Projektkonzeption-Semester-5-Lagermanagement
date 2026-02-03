@@ -29,9 +29,8 @@ public class InventoryController {
         Long placeId = ((Number) request.get("placeId")).longValue();
         Long itemId = ((Number) request.get("itemId")).longValue();
         int quantity = ((Number) request.get("quantity")).intValue();
-        int minQuantity = ((Number) request.get("minQuantity")).intValue();
         
-        return inventoryService.createInventory(placeId, itemId, quantity, minQuantity);
+        return inventoryService.createInventory(placeId, itemId, quantity);
     }
 
     @GetMapping("/history/{itemId}")

@@ -17,6 +17,9 @@ public class Place {
     @JoinColumn(name = "zone_id")
     private Zone zone;
 
+    @OneToOne(mappedBy = "place")
+    private Inventory inventory;
+
     public Place() {}
 
     public Place(String code, Integer capacity, Zone zone) {
@@ -36,5 +39,7 @@ public class Place {
     public Zone getZone() { return zone; }
     public void setZone(Zone zone) { this.zone = zone; }
 
+    public Inventory getInventory() { return inventory; }
+    public void setInventory(Inventory inventory) { this.inventory = inventory; }
 }
 

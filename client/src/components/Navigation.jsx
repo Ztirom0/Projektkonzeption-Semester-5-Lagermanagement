@@ -57,7 +57,7 @@ export default function Navigation({ onNavigate }) {
         {/* Header mit Toggle */}
         <div className="sidebar-header">
           <div className="sidebar-brand">
-            <span className="brand-icon">📦</span>
+            <span className="brand-icon"></span>
             {sidebarOpen && <span className="brand-text">SmartStock</span>}
           </div>
           <button 

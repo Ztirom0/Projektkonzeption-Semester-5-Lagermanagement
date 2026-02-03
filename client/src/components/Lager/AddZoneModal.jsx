@@ -2,17 +2,20 @@
 
 import { useState } from "react";
 import CenteredModal from "../UI/CenteredModal";
-import { createZone } from "../../api/storageApi";
+import { createZone, createZoneCategory } from "../../api/storageApi";
 
 export default function AddZoneModal({
   locationId,
   storageTypeId,
   zoneCategories,
   onCreated,
-  onClose
+  onClose,
+  onCategoryCreated
 }) {
   const [name, setName] = useState("");
   const [categoryId, setCategoryId] = useState(zoneCategories[0]?.id ?? null);
+  const [showNewCategory, setShowNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -31,6 +34,27 @@ export default function AddZoneModal({
       onClose();
     } catch (err) {
       setError("Fehler beim Anlegen der Zone");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCreateCategory = async (e) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) return;
+
+    try {
+      setSaving(true);
+      setError(null);
+      const newCategory = await createZoneCategory({
+        name: newCategoryName.trim()
+      });
+      setNewCategoryName("");
+      setShowNewCategory(false);
+      setCategoryId(newCategory.id);
+      onCategoryCreated?.(newCategory);
+    } catch (err) {
+      setError("Fehler beim Anlegen der Kategorie");
     } finally {
       setSaving(false);
     }
@@ -57,18 +81,62 @@ export default function AddZoneModal({
 
         <div className="mb-3">
           <label className="form-label">Kategorie</label>
-          <select
-            className="form-select"
-            value={categoryId ?? ""}
-            onChange={(e) => setCategoryId(Number(e.target.value))}
-            required
-          >
-            {zoneCategories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          {!showNewCategory ? (
+            <>
+              <select
+                className="form-select"
+                value={categoryId ?? ""}
+                onChange={(e) => setCategoryId(Number(e.target.value))}
+                required
+              >
+                <option value="">-- Kategorie auswählen --</option>
+                {zoneCategories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-primary mt-2"
+                onClick={() => setShowNewCategory(true)}
+              >
+                + Neue Kategorie
+              </button>
+            </>
+          ) : (
+            <>
+              <input
+                type="text"
+                className="form-control"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="z.B. Lagerblock"
+                required
+              />
+              <div className="d-flex gap-2 mt-2">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-success"
+                  onClick={handleCreateCategory}
+                  disabled={saving || !newCategoryName.trim()}
+                >
+                  Erstellen
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => {
+                    setShowNewCategory(false);
+                    setNewCategoryName("");
+                  }}
+                  disabled={saving}
+                >
+                  Abbrechen
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="d-flex justify-content-end gap-0">
@@ -80,7 +148,7 @@ export default function AddZoneModal({
           >
             Abbrechen
           </button>
-          <button type="submit" className="btn btn-success" disabled={saving}>
+          <button type="submit" className="btn btn-success" disabled={saving || !categoryId}>
             {saving ? "Speichern..." : "Speichern"}
           </button>
         </div>
