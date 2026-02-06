@@ -1,5 +1,31 @@
 // src/api/forecastApi.js
 
+function resolveEffectiveToday(itemId, inventoryHistory, sales) {
+  const historyDates = (inventoryHistory || [])
+    .filter(h => h.itemId === itemId && h.date)
+    .map(h => new Date(h.date))
+    .filter(d => !isNaN(d.getTime()));
+
+  if (historyDates.length > 0) {
+    const lastHistory = new Date(Math.max(...historyDates.map(d => d.getTime())));
+    lastHistory.setDate(lastHistory.getDate() + 1);
+    return lastHistory;
+  }
+
+  const salesDates = (sales || [])
+    .filter(s => s.itemId === itemId)
+    .map(s => new Date(s.saleDate || s.date))
+    .filter(d => !isNaN(d.getTime()));
+
+  if (salesDates.length > 0) {
+    const lastSale = new Date(Math.max(...salesDates.map(d => d.getTime())));
+    lastSale.setDate(lastSale.getDate() + 1);
+    return lastSale;
+  }
+
+  return new Date();
+}
+
 export function calculateForecast(sales, inventoryHistory, itemId, method = "moving-average", days = 10) {
   // 1. Letzten echten Bestand holen
   const history = inventoryHistory
@@ -57,6 +83,8 @@ export function calculateForecast(sales, inventoryHistory, itemId, method = "mov
   // Vorbereitung je nach Methode
   let lrResult, smoothedValue, rollingData;
   
+  const effectiveToday = resolveEffectiveToday(itemId, inventoryHistory, sales);
+
   switch (method) {
     case "linear-regression":
       // Berechne Trend EINMAL aus historischen Daten
@@ -99,7 +127,7 @@ export function calculateForecast(sales, inventoryHistory, itemId, method = "mov
         // Füge prognostizierten Verkauf zum rollenden Datensatz hinzu
         const lastDate = rollingData[rollingData.length - 1]?.date 
           ? new Date(rollingData[rollingData.length - 1].date)
-          : new Date();
+          : new Date(effectiveToday);
         
         const nextDate = new Date(lastDate);
         nextDate.setDate(nextDate.getDate() + 1);

@@ -31,6 +31,17 @@ public class InventoryService {
     private final SaleRepository saleRepository;
     private static final int REORDER_LEAD_TIME_DAYS = 5; // Nachbestellpuffer in Tagen
 
+        private LocalDate resolveEffectiveToday(Long itemId) {
+                List<InventoryHistory> history = inventoryHistoryRepository.findByItemIdOrderByDateAsc(itemId);
+                if (history != null && !history.isEmpty()) {
+                        LocalDate lastHistoryDate = history.get(history.size() - 1).getDate();
+                        if (lastHistoryDate != null) {
+                                return lastHistoryDate.plusDays(1);
+                        }
+                }
+                return LocalDate.now();
+        }
+
     public InventoryService(PlaceRepository placeRepository, ItemRepository itemRepository, 
                            InventoryRepository inventoryRepository, InventoryHistoryRepository inventoryHistoryRepository,
                            SaleRepository saleRepository) {
@@ -52,7 +63,6 @@ public class InventoryService {
     }
 
     public InventoryDTO createInventory(Long placeId, Long itemId, int quantity) {
-        System.out.println("📦 createInventory: placeId=" + placeId + ", itemId=" + itemId + ", quantity=" + quantity);
 
         Place place = placeRepository.findById(placeId)
                 .orElseThrow(() -> new RuntimeException("Place not found"));
@@ -102,9 +112,10 @@ public class InventoryService {
         Integer minQuantity = item.getMinQuantity();
 
         // Get sales from last 7 days to calculate daily rate
-        LocalDate sevenDaysAgo = LocalDate.now().minusDays(7);
+        LocalDate effectiveToday = resolveEffectiveToday(itemId);
+        LocalDate sevenDaysAgo = effectiveToday.minusDays(7);
         List<Sale> recentSales = saleRepository.findByItemIdOrderByDateAsc(itemId).stream()
-                .filter(s -> s.getDate().isAfter(sevenDaysAgo))
+                .filter(s -> !s.getDate().isAfter(effectiveToday) && s.getDate().isAfter(sevenDaysAgo))
                 .toList();
 
         double dailySalesRate = recentSales.stream()
@@ -122,7 +133,7 @@ public class InventoryService {
         // 1. Current quantity is already at or below minimum, OR
         // 2. Days remaining until minimum quantity is less than lead time
         boolean reorderRecommended = currentQuantity <= minQuantity || daysRemaining <= REORDER_LEAD_TIME_DAYS;
-        LocalDate reorderDate = LocalDate.now().plusDays(Math.max(0, daysRemaining - REORDER_LEAD_TIME_DAYS));
+        LocalDate reorderDate = effectiveToday.plusDays(Math.max(0, daysRemaining - REORDER_LEAD_TIME_DAYS));
 
         return new InventoryStatusDTO(
                 itemId,

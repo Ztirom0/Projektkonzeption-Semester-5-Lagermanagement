@@ -38,7 +38,7 @@ export default function ProductReportView({ item, onBack }) {
         ];
         setForecasts(forecastData);
 
-        const statuses = calculateAllInventoryStatuses([item], inv, salesRes);
+        const statuses = calculateAllInventoryStatuses([item], inv, salesRes, history);
         const status = statuses.find(s => s.itemId === item.id) || null;
         setInventoryStatus(status);
 

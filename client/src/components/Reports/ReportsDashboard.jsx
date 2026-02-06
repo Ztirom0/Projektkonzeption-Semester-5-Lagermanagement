@@ -53,6 +53,8 @@ useEffect(() => {
         getAllItems(),
         getInventory()
       ]);
+      console.log("[ReportsDashboard] getInventory() count:", inv?.length || 0);
+      console.log("[ReportsDashboard] getInventory() sample:", (inv || []).slice(0, 10));
       setItems(itemsRes);
 
       const ids = Array.from(new Set(inv.map(i => i.itemId)));
@@ -80,7 +82,14 @@ useEffect(() => {
       setForecasts(forecastsData);
 
       // 5. Inventory Status im Frontend berechnen
-      const calculatedStatuses = calculateAllInventoryStatuses(itemsRes, inv, s);
+      console.log("[ReportsDashboard] calculateAllInventoryStatuses input:", {
+        itemsCount: itemsRes?.length || 0,
+        inventoryCount: inv?.length || 0,
+        salesCount: s?.length || 0,
+        historyCount: combinedHistory?.length || 0
+      });
+      const calculatedStatuses = calculateAllInventoryStatuses(itemsRes, inv, s, combinedHistory);
+      console.log("[ReportsDashboard] inventoryStatuses sample:", (calculatedStatuses || []).slice(0, 10));
       setInventoryStatuses(calculatedStatuses);
 
       // 6. Empfehlungen im Frontend berechnen
@@ -191,6 +200,7 @@ useEffect(() => {
                   {recommendations.map((r, idx) => {
                     const item = items.find(i => i.id === r.itemId);
                     const itemName = item ? item.name : `Artikel ${r.itemId}`;
+                    if(r.recommendedQuantity <= 0) return;
                     return (
                       <div className="col-md-3" key={idx}>
                         <div className="border rounded p-3 h-100" style={{ backgroundColor: "#f9f9f9" }}>

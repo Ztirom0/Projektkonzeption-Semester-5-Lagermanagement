@@ -13,7 +13,7 @@ import ProductReportView from "./Reports/ProductReportView";
 import AlarmBell from "./AlarmBell";
 import AlertsPanel from "./AlertsPanel";
 import { createItem, getAllItems } from "../api/itemsApi";
-import { getInventory } from "../api/inventoryApi";
+import { getInventory, getInventoryHistory } from "../api/inventoryApi";
 import { getSales } from "../api/salesApi";
 import { calculateAlerts } from "../api/alertsApi";
 import { calculateAllInventoryStatuses } from "../api/inventoryCalculations";
@@ -30,8 +30,14 @@ export default function DummyHome() {
     if (showAlerts) {
       // Lade alle notwendigen Daten und berechne Alerts im Frontend
       Promise.all([getAllItems(), getInventory(), getSales()])
-        .then(([items, inventoryList, sales]) => {
-          const statuses = calculateAllInventoryStatuses(items, inventoryList, sales);
+        .then(async ([items, inventoryList, sales]) => {
+          const historyPromises = items.map(item =>
+            getInventoryHistory(item.id, 180).catch(() => [])
+          );
+          const historyResults = await Promise.all(historyPromises);
+          const combinedHistory = historyResults.flat();
+
+          const statuses = calculateAllInventoryStatuses(items, inventoryList, sales, combinedHistory);
           const calculatedAlerts = calculateAlerts(statuses);
           setAlerts(calculatedAlerts);
         })

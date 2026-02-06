@@ -41,6 +41,26 @@ export default function MainDashboard() {
       .filter(Boolean);
   };
 
+  const getEffectiveToday = (history, normalizedSales) => {
+    const historyDates = (history || [])
+      .map(h => new Date(h.date))
+      .filter(d => !Number.isNaN(d.getTime()));
+
+    if (historyDates.length > 0) {
+      const lastHistory = new Date(Math.max(...historyDates.map(d => d.getTime())));
+      lastHistory.setDate(lastHistory.getDate() + 1);
+      return lastHistory;
+    }
+
+    if (normalizedSales.length > 0) {
+      const lastSale = new Date(Math.max(...normalizedSales.map(s => s.__dateObj.getTime())));
+      lastSale.setDate(lastSale.getDate() + 1);
+      return lastSale;
+    }
+
+    return new Date();
+  };
+
   const buildChartData = (sales, history, ids, method) => {
     const normalized = normalizeSales(sales);
     const grouped = {};
@@ -65,9 +85,7 @@ export default function MainDashboard() {
 
     if (!ids.length) return historical;
 
-    const latestDate = normalized.length > 0
-      ? new Date(Math.max(...normalized.map(s => s.__dateObj.getTime())))
-      : new Date();
+    const latestDate = getEffectiveToday(history, normalized);
 
     const forecastDates = Array.from({ length: 10 }, (_, i) => {
       const d = new Date(latestDate);
@@ -123,7 +141,8 @@ export default function MainDashboard() {
 
         // Lade Verkaufsdaten für Haupt-Chart
         const sales = await getSales();
-        
+
+        let combinedHistory = [];
         if (sales.length > 0) {
           const ids = items.map((item) => item.id);
 
@@ -131,7 +150,7 @@ export default function MainDashboard() {
             getInventoryHistory(itemId, 180).catch(() => [])
           );
           const historyResults = await Promise.all(historyPromises);
-          const combinedHistory = historyResults.flat();
+          combinedHistory = historyResults.flat();
 
           const chartPoints = buildChartData(sales, combinedHistory, ids, forecastMethod);
           setChartData(chartPoints);
@@ -143,7 +162,7 @@ export default function MainDashboard() {
         const inventoryList = await getInventory();
 
         // Berechne Status für alle Items im Frontend
-        const calculatedStatuses = calculateAllInventoryStatuses(items, inventoryList, sales);
+        const calculatedStatuses = calculateAllInventoryStatuses(items, inventoryList, sales, combinedHistory);
         setInventoryStatus(calculatedStatuses);
 
         // Berechne Alerts im Frontend

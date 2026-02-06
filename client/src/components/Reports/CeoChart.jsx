@@ -43,7 +43,34 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
   };
 
   const allHistoricalDates = getAllDates();
-  const lastDate = allHistoricalDates[allHistoricalDates.length - 1] || new Date().toISOString().split('T')[0];
+
+  const resolveEffectiveToday = () => {
+    const historyDates = (inventoryHistory || [])
+      .filter(h => activeItemId && h.itemId === activeItemId)
+      .map(h => new Date(h.date))
+      .filter(d => !Number.isNaN(d.getTime()));
+
+    if (historyDates.length > 0) {
+      const lastHistory = new Date(Math.max(...historyDates.map(d => d.getTime())));
+      lastHistory.setDate(lastHistory.getDate() + 1);
+      return lastHistory;
+    }
+
+    const salesDates = sales
+      .filter(s => activeItemId && s.itemId === activeItemId)
+      .map(s => new Date(s.date))
+      .filter(d => !Number.isNaN(d.getTime()));
+
+    if (salesDates.length > 0) {
+      const lastSale = new Date(Math.max(...salesDates.map(d => d.getTime())));
+      lastSale.setDate(lastSale.getDate() + 1);
+      return lastSale;
+    }
+
+    return new Date();
+  };
+
+  const lastDate = resolveEffectiveToday().toISOString().split('T')[0];
   const forecastDays = 10;
 
   // Forecast dates für nächste 30 Tage

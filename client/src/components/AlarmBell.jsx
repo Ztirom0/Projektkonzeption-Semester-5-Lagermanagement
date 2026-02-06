@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getAllItems } from "../api/itemsApi";
-import { getInventory } from "../api/inventoryApi";
+import { getInventory, getInventoryHistory } from "../api/inventoryApi";
 import { getSales } from "../api/salesApi";
 import { calculateAlerts } from "../api/alertsApi";
 import { calculateAllInventoryStatuses } from "../api/inventoryCalculations";
@@ -19,9 +19,15 @@ export default function AlarmBell({ onOpen }) {
           getInventory(),
           getSales()
         ]);
+
+        const historyPromises = items.map(item =>
+          getInventoryHistory(item.id, 180).catch(() => [])
+        );
+        const historyResults = await Promise.all(historyPromises);
+        const combinedHistory = historyResults.flat();
         
         // Berechne Status im Frontend
-        const statuses = calculateAllInventoryStatuses(items, inventoryList, sales);
+        const statuses = calculateAllInventoryStatuses(items, inventoryList, sales, combinedHistory);
         
         // Berechne Alerts im Frontend
         const calculatedAlerts = calculateAlerts(statuses);
