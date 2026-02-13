@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useEffect } from "react";
 import { getAllItems } from "../../api/itemsApi";
-import { getInventory } from "../../api/inventoryApi";
+import { getInventory, getInventoryHistory } from "../../api/inventoryApi";
 import { getSales } from "../../api/salesApi";
 import { calculateAllInventoryStatuses } from "../../api/inventoryCalculations";
 
@@ -17,27 +17,34 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
   useEffect(() => {
     async function load() {
       try {
-        const [itemsRes, inventory, sales] = await Promise.all([
-          getAllItems(),
+        const [inventory, sales] = await Promise.all([
           getInventory(),
           getSales()
         ]);
 
+        const itemsRes = itemsProp && itemsProp.length > 0 ? itemsProp : await getAllItems();
+
+        const historyPromises = itemsRes.map(item =>
+          getInventoryHistory(item.id, 180).catch(() => [])
+        );
+        const historyResults = await Promise.all(historyPromises);
+        const combinedHistory = historyResults.flat();
+
         // Berechne Status für jedes Item
-        const statuses = calculateAllInventoryStatuses(itemsRes, inventory, sales);
+        const statuses = calculateAllInventoryStatuses(itemsRes, inventory, sales, combinedHistory);
         
         // Merge Items mit berechneten Status-Daten
         const merged = itemsRes.map(item => {
           const status = statuses.find(s => s.itemId === item.id);
-          const invEntries = inventory.filter(i => i.itemId === item.id);
-          const minQuantity = Math.max(...invEntries.map(i => i.minQuantity || 0), 0);
+          const minQuantity = item.minQuantity ?? 0;
           
           return {
             ...item,
             currentQuantity: status?.currentQuantity ?? 0,
             minQuantity,
             dailySalesRate: status?.dailySalesRate ?? 0,
-            daysRemaining: status?.daysRemaining ?? 0
+            daysRemaining: status?.daysRemaining ?? 0,
+            reorderRecommended: status?.reorderRecommended ?? false
           };
         });
         setItemsWithInventory(merged);
@@ -48,7 +55,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
     }
 
     load();
-  }, []);
+  }, [itemsProp]);
 
 
 
@@ -137,7 +144,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
           >
             <option value="all">Alle Produkte</option>
             <option value="low-stock">⚠️ Niedriger Bestand</option>
-            <option value="out-of-stock">❌ Ausverkauft</option>
+            <option value="out-of-stock">Ausverkauft</option>
           </select>
         </div>
         <div className="col-md-6">
@@ -173,8 +180,21 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
               </thead>
               <tbody>
                 {filtered.map((item) => {
-                  const isLow = item.currentQuantity <= item.minQuantity;
-                  const isEmpty = item.currentQuantity === 0;
+                  const isBelowMin = item.currentQuantity < item.minQuantity;
+                  const isReorderNeeded = item.reorderRecommended && !isBelowMin;
+
+                  // Debug für MinMenge 30
+                  if (item.minQuantity === 30) {
+                    console.log("[ProductSearch] Item debug:", {
+                      name: item.name,
+                      currentQuantity: item.currentQuantity,
+                      minQuantity: item.minQuantity,
+                      reorderRecommended: item.reorderRecommended,
+                      daysRemaining: item.daysRemaining,
+                      isBelowMin,
+                      isReorderNeeded
+                    });
+                  }
 
                   return (
                     <tr
@@ -192,9 +212,9 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
                       </td>
                       <td>{item.minQuantity}</td>
                       <td>
-                        {isEmpty ? (
-                          <span className="badge bg-danger">❌ Ausverkauft</span>
-                        ) : isLow ? (
+                        {isBelowMin ? (
+                          <span className="badge bg-danger">🔴 Unterschreitung</span>
+                        ) : isReorderNeeded ? (
                           <span className="badge bg-warning text-dark">⚠️ Niedrig</span>
                         ) : (
                           <span className="badge bg-success">✓ OK</span>
@@ -230,7 +250,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
             </>
           ) : (
             <>
-              <h6>📦 Keine Produkte vorhanden</h6>
+              <h6>Keine Produkte vorhanden</h6>
               <p className="text-muted mb-3">Erstellen Sie das erste Produkt um zu starten</p>
             </>
           )}

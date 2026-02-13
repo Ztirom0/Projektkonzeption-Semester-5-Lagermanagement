@@ -21,7 +21,10 @@ export async function createItem(itemData) {
     body: JSON.stringify(itemData)
   });
 
-  if (!res.ok) throw new Error("Fehler beim Erstellen des Artikels");
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || "Fehler beim Erstellen des Artikels");
+  }
   return await res.json();
 }
 

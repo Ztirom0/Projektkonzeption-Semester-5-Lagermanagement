@@ -6,13 +6,11 @@ import { calculateForecast } from "../../api/forecastApi";
 
 const colors = ["#0066cc", "#28a745", "#dc3545", "#ffc107", "#6f42c1", "#20c997", "#fd7e14", "#17a2b8"];
 
-export default function CeoChart({ sales, inventoryHistory, forecasts, recommendations, items, forecastMethod = "moving-average", onMethodChange }) {
-  const [selectedItemIds, setSelectedItemIds] = useState([]);
+export default function CeoChart({ sales, inventoryHistory, forecasts, recommendations, items, inventoryStatuses = [], forecastMethod = "moving-average", onMethodChange }) {
+  const [selectedItemId, setSelectedItemId] = useState(null);
   const [method, setMethod] = useState(forecastMethod);
   const [showSales, setShowSales] = useState(true);
   const [showInventory, setShowInventory] = useState(true);
-  const [showForecast, setShowForecast] = useState(true);
-  const [itemsOpen, setItemsOpen] = useState(true);
 
   // Handle method change
   const handleMethodChange = (newMethod) => {
@@ -23,22 +21,14 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
   };
 
   const uniqueItems = Array.from(new Set(sales.map(s => s.itemId))).sort();
-  const activeItemIds = selectedItemIds.length > 0 ? selectedItemIds : uniqueItems.slice(0, 1);
+  const activeItemId = selectedItemId || (uniqueItems.length > 0 ? uniqueItems[0] : null);
+  const activeItemIds = activeItemId ? [activeItemId] : [];
 
   if (uniqueItems.length === 0) {
-    return <div className="alert alert-info text-center py-5">📊 Keine Verkaufsdaten verfügbar</div>;
+    return <div className="alert alert-info text-center py-5">Keine Verkaufsdaten verfügbar</div>;
   }
 
-  // Toggle selection
-  const toggleItemSelection = (itemId) => {
-    setSelectedItemIds(prev =>
-      prev.includes(itemId)
-        ? prev.filter(id => id !== itemId)
-        : [...prev, itemId]
-    );
-  };
-
-  // Alle Daten sammeln für alle ausgewählten Items
+  // Alle Daten sammeln für das ausgewählte Item
   const getAllDates = () => {
     const allDates = new Set();
     activeItemIds.forEach(itemId => {
@@ -53,8 +43,35 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
   };
 
   const allHistoricalDates = getAllDates();
-  const lastDate = allHistoricalDates[allHistoricalDates.length - 1] || new Date().toISOString().split('T')[0];
-  const forecastDays = 30;
+
+  const resolveEffectiveToday = () => {
+    const historyDates = (inventoryHistory || [])
+      .filter(h => activeItemId && h.itemId === activeItemId)
+      .map(h => new Date(h.date))
+      .filter(d => !Number.isNaN(d.getTime()));
+
+    if (historyDates.length > 0) {
+      const lastHistory = new Date(Math.max(...historyDates.map(d => d.getTime())));
+      lastHistory.setDate(lastHistory.getDate() + 1);
+      return lastHistory;
+    }
+
+    const salesDates = sales
+      .filter(s => activeItemId && s.itemId === activeItemId)
+      .map(s => new Date(s.date))
+      .filter(d => !Number.isNaN(d.getTime()));
+
+    if (salesDates.length > 0) {
+      const lastSale = new Date(Math.max(...salesDates.map(d => d.getTime())));
+      lastSale.setDate(lastSale.getDate() + 1);
+      return lastSale;
+    }
+
+    return new Date();
+  };
+
+  const lastDate = resolveEffectiveToday().toISOString().split('T')[0];
+  const forecastDays = 10;
 
   // Forecast dates für nächste 30 Tage
   const forecastDates = Array.from({ length: forecastDays }, (_, i) => {
@@ -69,7 +86,7 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
   const computedForecasts = useMemo(() => {
     return activeItemIds.map(itemId => {
       try {
-        const fc = calculateForecast(sales, inventoryHistory, itemId, method, 30);
+        const fc = calculateForecast(sales, inventoryHistory, itemId, method, 10);
         return fc;
       } catch (err) {
         return null;
@@ -99,30 +116,17 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
         return sale ? sale.soldQuantity : null;
       });
 
-      // Prognose-Daten für Verkäufe (für die nächsten 30 Tage)
+      // Prognose-Daten für Verkäufe (für die nächsten 10 Tage)
       const salesForecastData = allDates.map((d, dateIdx) => {
         if (forecast && dateIdx >= allHistoricalDates.length) {
           // Tagesindex in der Prognose
           const forecastDayIdx = dateIdx - allHistoricalDates.length;
           
           if (forecast.points && forecast.points.length > forecastDayIdx) {
-            // Aus der Bestandsprognose den täglichen Verbrauch ablesen
-            if (forecastDayIdx === 0) {
-              const val = forecast.startQuantity - forecast.points[0].quantity;
-              return val;
-            } else {
-              const prev = forecast.points[forecastDayIdx - 1].quantity;
-              const curr = forecast.points[forecastDayIdx].quantity;
-              return Math.max(0, prev - curr);
-            }
+            // Verwende die prognostizierte Verkaufsmenge für diesen Tag
+            return forecast.points[forecastDayIdx].predictedSales || 0;
           }
           
-          // Fallback: durchschnittliche Tagesverkäufe
-          const recentSales = itemSales.slice(-7);
-          if (recentSales.length > 0) {
-            const avg = recentSales.reduce((sum, s) => sum + s.soldQuantity, 0) / recentSales.length;
-            return Math.round(avg);
-          }
           return 0;
         }
         return null;
@@ -136,7 +140,7 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
 
 
       const salesDataset = {
-        label: `${itemName} - Verkauf (Stück/Tag)`,
+        label: `Verkauf (Stück/Tag)`,
         data: combinedSalesData,
         borderColor: salesColor,
         backgroundColor: `${salesColor}15`,
@@ -180,7 +184,7 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
       });
 
       const inventoryDataset = {
-        label: `${itemName} - Bestand (Stück)`,
+        label: `Bestand (Stück)`,
         data: combinedInventoryData,
         borderColor: inventoryColor,
         backgroundColor: `${inventoryColor}10`,
@@ -204,6 +208,7 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
     const firstItemId = activeItemIds[0];
     const firstItem = items.find(i => i.id === firstItemId);
     firstItemName = firstItem ? firstItem.name : `Artikel ${firstItemId}`;
+    const firstItemStatus = inventoryStatuses.find(s => s.itemId === firstItemId);
     const firstItemSales = sales.filter(s => s.itemId === firstItemId).sort((a, b) => new Date(a.date) - new Date(b.date));
     var avgHistorical = firstItemSales.length > 0
       ? (firstItemSales.reduce((a, b) => a + b.soldQuantity, 0) / firstItemSales.length).toFixed(1)
@@ -213,11 +218,13 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
       : 0;
     var forecast = forecasts.find(f => f.itemId === firstItemId);
     var recommendations_item = recommendations.filter(r => r.itemId === firstItemId);
+    var daysRemaining = firstItemStatus ? firstItemStatus.daysRemaining : null;
   } else {
     var avgHistorical = 0;
     var trend = 0;
     var forecast = null;
     var recommendations_item = [];
+    var daysRemaining = null;
   }
 
   const methodName = {
@@ -356,52 +363,33 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
       <div className="mb-5">
         <h2 className="h4 fw-bold mb-2">
           <span className="text-primary">
-            {activeItemIds.length > 0 ? `${activeItemIds.length} Artikel ausgewählt` : "Artikel wählen"}
+            {activeItemId ? items.find(i => i.id === activeItemId)?.name || `Artikel ${activeItemId}` : "Artikel auswählen"}
           </span>
         </h2>
-        <p className="text-muted mb-0">
-          Mehrfachauswahl von Artikeln zur Vergleichsanalyse. Verkaufsverlauf, Prognose und Nachbestellempfehlungen.
-        </p>
       </div>
 
       {/* Controls */}
       <div className="row mb-4 g-3">
-        {/* Artikel Multi-Select */}
+        {/* Artikel Select */}
         <div className="col-lg-6">
-          <div className="d-flex justify-content-between align-items-center mb-2">
-            <label className="form-label fw-bold small text-uppercase text-muted mb-0">📦 Artikel auswählen</label>
-            <button
-              type="button"
-              className="btn btn-sm btn-outline-secondary"
-              onClick={() => setItemsOpen(!itemsOpen)}
-            >
-              {itemsOpen ? "Einklappen" : "Ausklappen"}
-            </button>
-          </div>
-          {itemsOpen && (
-            <div className="border rounded p-3" style={{ maxHeight: "200px", overflowY: "auto", backgroundColor: "#f9f9f9" }}>
-              {uniqueItems.map(itemId => {
-                const item = items.find(i => i.id === itemId);
-                const itemName = item ? item.name : `Artikel ${itemId}`;
-                const isSelected = activeItemIds.includes(itemId);
-                return (
-                  <div key={itemId} className="form-check mb-2">
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      id={`item-${itemId}`}
-                      checked={isSelected}
-                      onChange={() => toggleItemSelection(itemId)}
-                    />
-                    <label className="form-check-label cursor-pointer" htmlFor={`item-${itemId}`}>
-                      <span className="fw-500">{itemName}</span>
-                      <span className="text-muted small ms-2">(SKU: {item?.sku})</span>
-                    </label>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <label className="form-label fw-bold small text-uppercase text-muted mb-2">Artikel auswählen</label>
+          <select 
+            className="form-select form-select-lg"
+            value={activeItemId || ""}
+            onChange={(e) => setSelectedItemId(Number(e.target.value) || null)}
+            style={{ borderColor: "#ddd" }}
+          >
+            <option value="">-- Artikel auswählen --</option>
+            {uniqueItems.map(itemId => {
+              const item = items.find(i => i.id === itemId);
+              const itemName = item ? item.name : `Artikel ${itemId}`;
+              return (
+                <option key={itemId} value={itemId}>
+                  {itemName} {item?.sku && `(SKU: ${item.sku})`}
+                </option>
+              );
+            })}
+          </select>
         </div>
 
         {/* Prognosemethode */}
@@ -413,9 +401,9 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
             onChange={(e) => handleMethodChange(e.target.value)}
             style={{ borderColor: "#ddd" }}
           >
-            <option value="moving-average">📊 Gleitender Durchschnitt (Stabilität)</option>
-            <option value="linear-regression">📈 Lineare Regression (Trend)</option>
-            <option value="exponential-smoothing">🔄 Exponentielle Glättung (Aktualität)</option>
+            <option value="moving-average">Gleitender Durchschnitt (Stabilität)</option>
+            <option value="linear-regression">Lineare Regression (Trend)</option>
+            <option value="exponential-smoothing">Exponentielle Glättung (Aktualität)</option>
           </select>
           <small className="text-muted d-block mt-2">
             {method === "moving-average" && "Best für stabile, wiederkehrende Nachfrage"}
@@ -428,7 +416,7 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
       {/* Visualisierungs-Optionen */}
       <div className="row mb-4 g-3">
         <div className="col-12">
-          <label className="form-label fw-bold small text-uppercase text-muted mb-2">📈 Daten anzeigen/verbergen</label>
+          <label className="form-label fw-bold small text-uppercase text-muted mb-2">Daten anzeigen/verbergen</label>
           <div className="d-flex flex-wrap gap-3">
             <div className="form-check">
               <input 
@@ -439,7 +427,7 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
                 onChange={() => setShowSales(!showSales)}
               />
               <label className="form-check-label" htmlFor="show-sales">
-                📊 <strong>Verkäufe</strong> (historisch)
+                <strong>Verkäufe</strong> (historisch)
               </label>
             </div>
             <div className="form-check">
@@ -451,19 +439,7 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
                 onChange={() => setShowInventory(!showInventory)}
               />
               <label className="form-check-label" htmlFor="show-inventory">
-                📦 <strong>Bestand</strong> (historisch)
-              </label>
-            </div>
-            <div className="form-check">
-              <input 
-                className="form-check-input" 
-                type="checkbox" 
-                id="show-forecast"
-                checked={showForecast}
-                onChange={() => setShowForecast(!showForecast)}
-              />
-              <label className="form-check-label" htmlFor="show-forecast">
-                🔮 <strong>Prognose</strong> (Zukunft)
+                <strong>Bestand</strong> (historisch)
               </label>
             </div>
           </div>
@@ -477,7 +453,7 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
             <Line data={chartData} options={chartOptions} plugins={[plugin]} />
           </div>
           <small className="text-muted mt-3 d-block">
-            ← Historische Daten  |  Gelbe Zone: Prognosebereich
+            Historische Daten  |  Gelbe Zone: Prognosebereich
           </small>
         </div>
       </div>
@@ -485,20 +461,12 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
       {/* KPI Cards - Executive Summary (nur für erstes Item) */}
       {activeItemIds.length > 0 && (
         <div className="row g-3 mb-5">
-          {/* Header mit Item-Name */}
-          <div className="col-12">
-            <div className="alert alert-light border-1 mb-0" style={{ borderLeft: "4px solid #0066cc" }}>
-              <h6 className="mb-0" style={{ color: "#0066cc" }}>
-                📌 KPI für: <strong>{firstItemName}</strong>
-              </h6>
-            </div>
-          </div>
 
           {/* Current Status */}
           <div className="col-lg-3">
             <div className="card shadow-sm border-0 h-100" style={{ borderTop: "4px solid #0066cc" }}>
               <div className="card-body">
-                <div className="small text-muted text-uppercase fw-bold mb-2">📊 Aktueller Durchschnitt</div>
+                <div className="small text-muted text-uppercase fw-bold mb-2">Aktueller Durchschnitt</div>
                 <div className="h3 fw-bold mb-0" style={{ color: "#0066cc" }}>
                   {avgHistorical} <span style={{ fontSize: "0.6em" }}>Stück/Tag</span>
                 </div>
@@ -510,7 +478,7 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
           <div className="col-lg-3">
             <div className="card shadow-sm border-0 h-100" style={{ borderTop: "4px solid " + (trend > 0 ? "#28a745" : trend < 0 ? "#dc3545" : "#6c757d") }}>
               <div className="card-body">
-                <div className="small text-muted text-uppercase fw-bold mb-2">📈 Trend</div>
+                <div className="small text-muted text-uppercase fw-bold mb-2">Trend</div>
                 <div className="h3 fw-bold mb-0" style={{ color: trend > 0 ? "#28a745" : trend < 0 ? "#dc3545" : "#6c757d" }}>
                   {trend > 0 ? "+" : ""}{trend}%
                   <span style={{ fontSize: "0.6em", marginLeft: "5px" }}>{trend > 0 ? "↗" : trend < 0 ? "↘" : "→"}</span>
@@ -519,16 +487,13 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
             </div>
           </div>
 
-          {/* 30-Tage Prognose */}
+          {/* Verfügbar für */}
           <div className="col-lg-3">
-            <div className="card shadow-sm border-0 h-100" style={{ borderTop: "4px solid #28a745" }}>
+            <div className="card shadow-sm border-0 h-100" style={{ borderTop: "4px solid " + (daysRemaining !== null && daysRemaining <= 2 ? "#dc3545" : daysRemaining !== null && daysRemaining <= 5 ? "#ffc107" : "#0dcaf0") }}>
               <div className="card-body">
-                <div className="small text-muted text-uppercase fw-bold mb-2">🔮 Prognose (30T)</div>
-                <div className="h3 fw-bold mb-0" style={{ color: "#28a745" }}>
-                  {forecast?.predictedDemand || 0} <span style={{ fontSize: "0.6em" }}>Stück</span>
-                </div>
-                <div className="small text-muted mt-2">
-                  Konfidenz: <strong>{Math.round((forecast?.confidence || 0) * 100)}%</strong>
+                <div className="small text-muted text-uppercase fw-bold mb-2">Verfügbar für</div>
+                <div className="h3 fw-bold mb-0" style={{ color: daysRemaining !== null && daysRemaining <= 2 ? "#dc3545" : daysRemaining !== null && daysRemaining <= 5 ? "#ffc107" : "#0dcaf0" }}>
+                  {daysRemaining === 999 ? "∞" : (daysRemaining ?? "-")} <span style={{ fontSize: "0.6em" }}>Tage</span>
                 </div>
               </div>
             </div>
@@ -538,9 +503,9 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
           <div className="col-lg-3">
             <div className="card shadow-sm border-0 h-100" style={{ borderTop: "4px solid " + (recommendations_item.length > 0 ? "#ffc107" : "#ccc") }}>
               <div className="card-body">
-                <div className="small text-muted text-uppercase fw-bold mb-2">✅ Nachbestellen</div>
+                <div className="small text-muted text-uppercase fw-bold mb-2">Nachbestellen</div>
                 <div className="h3 fw-bold mb-0" style={{ color: recommendations_item.length > 0 ? "#ffc107" : "#ccc" }}>
-                  {recommendations_item.length > 0 ? recommendations_item[0].recommendedOrder : "—"} <span style={{ fontSize: "0.6em" }}>Stück</span>
+                  {recommendations_item.length > 0 ? recommendations_item[0].recommendedQuantity : 0} <span style={{ fontSize: "0.6em" }}>Stück</span>
                 </div>
               </div>
             </div>

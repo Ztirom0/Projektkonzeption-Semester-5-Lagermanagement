@@ -1,9 +1,7 @@
 package com.moritz.lagerverwaltungssystem.controller;
 
-import com.moritz.lagerverwaltungssystem.dto.ZoneDTO;
 import com.moritz.lagerverwaltungssystem.dto.PlaceDTO;
 import com.moritz.lagerverwaltungssystem.dto.PlaceDetailDTO;
-import com.moritz.lagerverwaltungssystem.service.ZoneService;
 import com.moritz.lagerverwaltungssystem.service.PlaceService;
 import com.moritz.lagerverwaltungssystem.service.InventoryService;
 import org.springframework.web.bind.annotation.*;
@@ -14,39 +12,23 @@ import java.util.Map;
 // REST-Endpoint für Lagerzonen und Lagerplätze
 // Verwaltet Zonen, Lagerplätze und deren Inventory
 @RestController
-@RequestMapping("/api/storage-zones")
+@RequestMapping("/api")
 public class StorageZoneController {
 
-    private final ZoneService zoneService;
     private final PlaceService placeService;
     private final InventoryService inventoryService;
 
-    public StorageZoneController(ZoneService zoneService, PlaceService placeService,
+    public StorageZoneController(PlaceService placeService,
                                  InventoryService inventoryService) {
-        this.zoneService = zoneService;
         this.placeService = placeService;
         this.inventoryService = inventoryService;
     }
 
-    // Gibt alle Zonen eines Speichertyps zurück (GET /api/storage-zones/{id}/zone)
-    @GetMapping("/{id}/zone")
-    public List<ZoneDTO> getZones(@PathVariable Long id) {
-        return zoneService.getZonesByStorageType(id);
-    }
-
-    // Erstellt eine neue Zone (POST /api/storage-zones/{id}/zones)
-    @PostMapping("/{id}/zones")
-    public ZoneDTO addZone(@PathVariable Long id,
-                                           @RequestBody ZoneDTO zoneRequest) {
-        ZoneDTO created = zoneService.addZone(id, zoneRequest);
-        return created;
-    }
-
-    // Erstellt einen neuen Lagerplatz (POST /api/storage-zones/zone/{id}/places)
-    @PostMapping("/zone/{id}/places")
-    public PlaceDTO addPlace(@PathVariable Long id,
-                                             @RequestBody PlaceDTO placeRequest) {
-        PlaceDTO created = placeService.addPlace(id, placeRequest);
+    // POST /zones/{zoneId}/places
+    @PostMapping("/zones/{zoneId}/places")
+    public PlaceDTO addPlace(@PathVariable Long zoneId,
+                            @RequestBody PlaceDTO placeRequest) {
+        PlaceDTO created = placeService.addPlace(zoneId, placeRequest);
         return created;
     }
 
@@ -66,4 +48,3 @@ public class StorageZoneController {
         return inventoryService.getPlaceDetails(id);
     }
 }
-

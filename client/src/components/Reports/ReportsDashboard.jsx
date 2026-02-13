@@ -53,6 +53,8 @@ useEffect(() => {
         getAllItems(),
         getInventory()
       ]);
+      console.log("[ReportsDashboard] getInventory() count:", inv?.length || 0);
+      console.log("[ReportsDashboard] getInventory() sample:", (inv || []).slice(0, 10));
       setItems(itemsRes);
 
       const ids = Array.from(new Set(inv.map(i => i.itemId)));
@@ -80,7 +82,14 @@ useEffect(() => {
       setForecasts(forecastsData);
 
       // 5. Inventory Status im Frontend berechnen
-      const calculatedStatuses = calculateAllInventoryStatuses(itemsRes, inv, s);
+      console.log("[ReportsDashboard] calculateAllInventoryStatuses input:", {
+        itemsCount: itemsRes?.length || 0,
+        inventoryCount: inv?.length || 0,
+        salesCount: s?.length || 0,
+        historyCount: combinedHistory?.length || 0
+      });
+      const calculatedStatuses = calculateAllInventoryStatuses(itemsRes, inv, s, combinedHistory);
+      console.log("[ReportsDashboard] inventoryStatuses sample:", (calculatedStatuses || []).slice(0, 10));
       setInventoryStatuses(calculatedStatuses);
 
       // 6. Empfehlungen im Frontend berechnen
@@ -100,12 +109,6 @@ useEffect(() => {
   return (
     <div className="reports-dashboard">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h1 className="h3 mb-1">📊 CEO-Dashboard: Prognosen & Analysen</h1>
-          <p className="text-muted mb-0">
-            Historische Verkäufe, Nachfrageprognosen mit verschiedenen Methoden und intelligente Nachbestell-Empfehlungen.
-          </p>
-        </div>
         <button className="btn btn-outline-secondary" onClick={onBack}>
           ⬅ Zur Übersicht
         </button>
@@ -128,6 +131,7 @@ useEffect(() => {
               forecasts={forecasts} 
               recommendations={recommendations}
               items={items}
+              inventoryStatuses={inventoryStatuses}
               forecastMethod={forecastMethod}
               onMethodChange={setForecastMethod}
             />
@@ -141,7 +145,7 @@ useEffect(() => {
         <div className="col-12">
           <div className="card shadow-sm border-0">
             <div className="card-body">
-              <h5 className="card-title mb-3">📦 Bestandsstatus & Verfügbarkeit</h5>
+              <h2 className="card-title mb-3">Bestandsstatus & Verfügbarkeit</h2>
               {inventoryStatuses.length === 0 ? (
                 <div className="text-muted small">
                   Keine Status-Daten verfügbar.
@@ -186,7 +190,7 @@ useEffect(() => {
         <div className="col-12">
           <div className="card shadow-sm border-0">
             <div className="card-body">
-              <h5 className="card-title mb-3">📦 Nachbestell-Empfehlungen</h5>
+              <h2 className="card-title mb-3"> Nachbestell-Empfehlungen</h2>
               {recommendations.length === 0 ? (
                 <div className="text-muted small">
                   Keine Empfehlungen verfügbar.
@@ -196,6 +200,7 @@ useEffect(() => {
                   {recommendations.map((r, idx) => {
                     const item = items.find(i => i.id === r.itemId);
                     const itemName = item ? item.name : `Artikel ${r.itemId}`;
+                    if(r.recommendedQuantity <= 0) return;
                     return (
                       <div className="col-md-3" key={idx}>
                         <div className="border rounded p-3 h-100" style={{ backgroundColor: "#f9f9f9" }}>
@@ -203,7 +208,7 @@ useEffect(() => {
                             {itemName}
                           </div>
                           <div className="fw-bold h5 text-warning mb-1">
-                            {r.recommendedOrder} Stück
+                            {r.recommendedQuantity} Stück
                           </div>
                           <div className="small text-success">
                             {r.reason}

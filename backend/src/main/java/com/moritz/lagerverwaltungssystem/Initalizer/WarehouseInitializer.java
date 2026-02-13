@@ -7,6 +7,7 @@ import com.moritz.lagerverwaltungssystem.repository.*;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.time.LocalDate;
@@ -51,6 +52,7 @@ public class WarehouseInitializer implements ApplicationRunner {
     // Wird beim Start der Anwendung ausgeführt
     // Lädt Lagerdaten aus JSON-Datei falls Datenbank leer ist
     @Override
+    @Transactional
     public void run(ApplicationArguments args) throws Exception {
         // Überspringe wenn Daten bereits vorhanden sind
         if (itemRepository.count() > 0) return;
@@ -129,11 +131,33 @@ public class WarehouseInitializer implements ApplicationRunner {
             placeMap.put(d.code, place);
         }
 
+        Map<Long, Inventory> inventoryByPlaceId = new HashMap<>();
         for (InventoryData d : data.inventory) {
             Item item = itemMap.get(d.itemSku);
             Place place = placeMap.get(d.placeCode);
-            Inventory inv = new Inventory(item, place, d.quantity, item.getMinQuantity());
+            
+            if (place == null || item == null) {
+                System.out.println("WARN: Place or Item not found for inventory: " + d.placeCode + " / " + d.itemSku);
+                continue;
+            }
+
+            Long placeId = place.getId();
+            if (placeId == null) {
+                System.out.println("WARN: Place has no id for inventory: " + d.placeCode);
+                continue;
+            }
+
+            Inventory existing = inventoryByPlaceId.get(placeId);
+            if (existing != null) {
+                System.out.println("WARN: Duplicate inventory for place " + d.placeCode + ". Overriding item/quantity.");
+                existing.setItem(item);
+                existing.setQuantity(d.quantity);
+                continue;
+            }
+            
+            Inventory inv = new Inventory(place, item, d.quantity);
             inventoryRepository.save(inv);
+            inventoryByPlaceId.put(placeId, inv);
         }
 
         for (SaleData d : data.sales) {

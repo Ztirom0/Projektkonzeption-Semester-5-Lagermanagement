@@ -167,6 +167,11 @@
       "zone": "Stuttgart-HR-Zone-A"
     },
     {
+      "code": "STG-HR-A-04",
+      "capacity": 150,
+      "zone": "Stuttgart-HR-Zone-A"
+    },
+    {
       "code": "STG-HR-B-01",
       "capacity": 130,
       "zone": "Stuttgart-HR-Zone-B"
@@ -188,6 +193,21 @@
     },
     {
       "code": "STG-KT-S-03",
+      "capacity": 80,
+      "zone": "Stuttgart-KT-Zone-Schutz"
+    },
+    {
+      "code": "STG-KT-S-04",
+      "capacity": 80,
+      "zone": "Stuttgart-KT-Zone-Schutz"
+    },
+    {
+      "code": "STG-KT-S-05",
+      "capacity": 80,
+      "zone": "Stuttgart-KT-Zone-Schutz"
+    },
+    {
+      "code": "STG-KT-S-06",
       "capacity": 80,
       "zone": "Stuttgart-KT-Zone-Schutz"
     },
@@ -216,92 +236,62 @@
     {
       "itemSku": "SKU001",
       "placeCode": "STG-HR-A-01",
-      "quantity": 85
-    },
-    {
-      "itemSku": "SKU001",
-      "placeCode": "STG-HR-A-02",
-      "quantity": 9
+      "quantity": 49
     },
     {
       "itemSku": "SKU002",
       "placeCode": "STG-HR-A-03",
-      "quantity": 67
+      "quantity": 47
     },
     {
       "itemSku": "SKU003",
       "placeCode": "STG-HR-B-01",
-      "quantity": 8
-    },
-    {
-      "itemSku": "SKU003",
-      "placeCode": "STG-HR-B-02",
-      "quantity": 22
+      "quantity": 9
     },
     {
       "itemSku": "SKU004",
       "placeCode": "STG-KT-S-01",
-      "quantity": 145
+      "quantity": 37
     },
     {
       "itemSku": "SKU005",
-      "placeCode": "STG-KT-S-02",
-      "quantity": 38
+      "placeCode": "STG-KT-S-05",
+      "quantity": 14
     },
     {
       "itemSku": "SKU006",
-      "placeCode": "STG-HR-A-01",
-      "quantity": 42
+      "placeCode": "STG-HR-A-04",
+      "quantity": 6
     },
     {
       "itemSku": "SKU007",
-      "placeCode": "STG-KT-S-01",
-      "quantity": 78
-    },
-    {
-      "itemSku": "SKU007",
-      "placeCode": "STG-KT-S-02",
-      "quantity": 56
+      "placeCode": "STG-KT-S-06",
+      "quantity": 55
     },
     {
       "itemSku": "SKU008",
       "placeCode": "STG-KT-S-03",
-      "quantity": 23
+      "quantity": 10
     },
     {
       "itemSku": "SKU009",
       "placeCode": "HN-PR-A-01",
-      "quantity": 124
-    },
-    {
-      "itemSku": "SKU009",
-      "placeCode": "HN-PR-A-02",
-      "quantity": 156
+      "quantity": 74
     },
     {
       "itemSku": "SKU010",
       "placeCode": "HN-PR-B-01",
-      "quantity": 71
-    },
-    {
-      "itemSku": "SKU010",
-      "placeCode": "HN-PR-B-02",
-      "quantity": 84
+      "quantity": 81
     },
     {
       "itemSku": "SKU011",
-      "placeCode": "STG-KT-S-03",
-      "quantity": 12
+      "placeCode": "STG-KT-S-04",
+      "quantity": 6
     },
     {
       "itemSku": "SKU012",
-      "placeCode": "HN-PR-A-01",
-      "quantity": 47
-    },
-    {
-      "itemSku": "SKU012",
-      "placeCode": "HN-PR-B-01",
-      "quantity": 128
+      "placeCode": "HN-PR-A-02",
+      "quantity": 7
     }
   ],
   "sales": [

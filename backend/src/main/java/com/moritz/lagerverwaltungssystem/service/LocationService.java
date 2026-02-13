@@ -53,7 +53,25 @@ public class LocationService {
         locationRepository.save(location);
     }
 
-    // Hilfsmethode: konvertiert Location-Entity zu DTO
+    public StorageTypeDTO createStorageTypeForLocation(Long locationId, StorageTypeDTO dto) {
+        StorageType type = new StorageType();
+        type.setName(dto.getName());
+        type.setDescription(dto.getDescription());
+
+        StorageType saved = storageTypeRepository.save(type);
+
+        Location location = locationRepository.findById(locationId)
+                .orElseThrow(() -> new RuntimeException("Location not found"));
+        location.getStorageTypes().add(saved);
+        locationRepository.save(location);
+
+        StorageTypeDTO result = new StorageTypeDTO();
+        result.setId(saved.getId());
+        result.setName(saved.getName());
+        result.setDescription(saved.getDescription());
+        return result;
+    }
+
     private LocationDTO toDTO(Location location) {
         LocationDTO dto = new LocationDTO();
         dto.setId(location.getId());

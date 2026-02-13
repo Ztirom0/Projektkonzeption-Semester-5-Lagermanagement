@@ -19,35 +19,54 @@ public class PlaceService {
     private final PlaceRepository placeRepository;
     private final ZoneRepository zoneRepository;
     private final ItemRepository itemRepository;
+    private final InventoryService inventoryService;
 
     public PlaceService(PlaceRepository placeRepository,
                         ZoneRepository zoneRepository,
-                        ItemRepository itemRepository) {
+                        ItemRepository itemRepository,
+                        InventoryService inventoryService) {
         this.placeRepository = placeRepository;
         this.zoneRepository = zoneRepository;
         this.itemRepository = itemRepository;
+        this.inventoryService = inventoryService;
     }
 
     // Ordnet einen Artikel einem Lagerplatz zu
     // Die Menge wird über den InventoryService verwaltet
     public PlaceDTO assignItemToPlace(Long placeId, Long itemId, Integer quantity) {
+        System.out.println("🔄 assignItemToPlace: placeId=" + placeId + ", itemId=" + itemId + ", quantity=" + quantity);
+
         Place place = placeRepository.findById(placeId)
                 .orElseThrow(() -> new RuntimeException("Place not found"));
 
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new RuntimeException("Item not found"));
 
-        // Inventory-Eintrag erstellen/aktualisieren über InventoryService
-        // Die Item- und Quantity-Zuordnung erfolgt über die Inventory-Tabelle
+        System.out.println("✅ Found place: " + place.getCode() + ", item: " + item.getName());
 
-        return new PlaceDTO(
+        // Create inventory entry
+        inventoryService.createInventory(placeId, itemId, quantity);
+
+        System.out.println("✅ Inventory created");
+
+        // Reload place to get updated inventory
+        place = placeRepository.findById(placeId).get();
+        System.out.println("✅ Place reloaded, inventory: " + place.getInventory());
+
+        PlaceDTO result = new PlaceDTO(
                 place.getId(),
                 place.getCode(),
-                place.getCapacity()
+                place.getCapacity(),
+                item.getId(),
+                item.getName(),
+                quantity
         );
+
+        System.out.println("✅ Returning PlaceDTO: id=" + result.getId() + ", itemId=" + result.getItemId() + ", itemName=" + result.getItemName());
+
+        return result;
     }
 
-    // Erstellt einen neuen Lagerplatz in einer Zone
     public PlaceDTO addPlace(Long zoneId, PlaceDTO dto) {
         Zone zone = zoneRepository.findById(zoneId)
                 .orElseThrow(() -> new RuntimeException("Zone not found"));
@@ -56,9 +75,12 @@ public class PlaceService {
         Place saved = placeRepository.save(place);
 
         return new PlaceDTO(saved.getId(),
-                                saved.getCode(),
-                                saved.getCapacity());
+                            saved.getCode(),
+                            saved.getCapacity());
     }
 
+    public PlaceDTO createPlaceAndAssign(Long zoneId, PlaceDTO dto) {
+        return addPlace(zoneId, dto);
+    }
 
 }

@@ -8,6 +8,7 @@ import AddLocationModal from "./AddLocationModal";
 import AddStorageTypeModal from "./AddStorageTypeModal";
 import AddZoneModal from "./AddZoneModal";
 import AddPlaceModal from "./AddPlaceModal";
+import AssignItemToPlaceModal from "./AssignItemToPlaceModal";
 
 export default function WarehouseOverview({ onBack }) {
   const [locations, setLocations] = useState([]);
@@ -19,10 +20,12 @@ export default function WarehouseOverview({ onBack }) {
   const [showAddType, setShowAddType] = useState(false);
   const [showAddZone, setShowAddZone] = useState(false);
   const [showAddPlace, setShowAddPlace] = useState(false);
+  const [showAssignItem, setShowAssignItem] = useState(false);
 
   const [activeLocation, setActiveLocation] = useState(null);
   const [activeStorageType, setActiveStorageType] = useState(null);
   const [activeZone, setActiveZone] = useState(null);
+  const [activePlace, setActivePlace] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -100,6 +103,23 @@ export default function WarehouseOverview({ onBack }) {
     );
   };
 
+  const handleItemAssigned = (updatedPlace) => {
+    setLocations((prev) =>
+      prev.map((loc) => ({
+        ...loc,
+        storageTypes: (loc.storageTypes || []).map((type) => ({
+          ...type,
+          zones: (type.zones || []).map((zone) => ({
+            ...zone,
+            places: (zone.places || []).map((place) =>
+              place.id === updatedPlace.id ? updatedPlace : place
+            )
+          }))
+        }))
+      }))
+    );
+  };
+
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ height: '60vh' }}>
@@ -160,6 +180,10 @@ export default function WarehouseOverview({ onBack }) {
                 setActiveZone(zone);
                 setShowAddPlace(true);
               }}
+              onAssignItem={(place) => {
+                setActivePlace(place);
+                setShowAssignItem(true);
+              }}
             />
           ))}
         </div>
@@ -195,6 +219,14 @@ export default function WarehouseOverview({ onBack }) {
           zone={activeZone}
           onCreated={handlePlaceCreated}
           onClose={() => setShowAddPlace(false)}
+        />
+      )}
+
+      {showAssignItem && activePlace && (
+        <AssignItemToPlaceModal
+          place={activePlace}
+          onAssigned={handleItemAssigned}
+          onClose={() => setShowAssignItem(false)}
         />
       )}
 

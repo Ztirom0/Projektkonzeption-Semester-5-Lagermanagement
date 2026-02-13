@@ -12,8 +12,8 @@ import ProductReportView from "./Reports/ProductReportView";
 
 import AlarmBell from "./AlarmBell";
 import AlertsPanel from "./AlertsPanel";
-import { getAllItems } from "../api/itemsApi";
-import { getInventory } from "../api/inventoryApi";
+import { createItem, getAllItems } from "../api/itemsApi";
+import { getInventory, getInventoryHistory } from "../api/inventoryApi";
 import { getSales } from "../api/salesApi";
 import { calculateAlerts } from "../api/alertsApi";
 import { calculateAllInventoryStatuses } from "../api/inventoryCalculations";
@@ -30,8 +30,14 @@ export default function DummyHome() {
     if (showAlerts) {
       // Lade alle notwendigen Daten und berechne Alerts im Frontend
       Promise.all([getAllItems(), getInventory(), getSales()])
-        .then(([items, inventoryList, sales]) => {
-          const statuses = calculateAllInventoryStatuses(items, inventoryList, sales);
+        .then(async ([items, inventoryList, sales]) => {
+          const historyPromises = items.map(item =>
+            getInventoryHistory(item.id, 180).catch(() => [])
+          );
+          const historyResults = await Promise.all(historyPromises);
+          const combinedHistory = historyResults.flat();
+
+          const statuses = calculateAllInventoryStatuses(items, inventoryList, sales, combinedHistory);
           const calculatedAlerts = calculateAlerts(statuses);
           setAlerts(calculatedAlerts);
         })
@@ -63,7 +69,18 @@ export default function DummyHome() {
 
         {/* Alerts Panel */}
         {showAlerts && (
-          <AlertsPanel alerts={alerts} onClose={() => setShowAlerts(false)} />
+          <AlertsPanel 
+            alerts={alerts} 
+            onClose={() => setShowAlerts(false)}
+            onItemClick={(alert) => {
+              const itemToShow = items.find(i => i.id === alert.itemId);
+              if (itemToShow) {
+                setSelectedProduct(itemToShow);
+                setView("product-report");
+                setShowAlerts(false);
+              }
+            }}
+          />
         )}
 
         <div className="container-fluid py-4">
@@ -108,6 +125,11 @@ export default function DummyHome() {
       {/* MODALS FOR ADD OPERATIONS */}
       {showProductModal && (
         <CreateProductModal 
+          onSave={async (itemData) => {
+            const created = await createItem(itemData);
+            setItems((prev) => [created, ...(prev || [])]);
+            return created;
+          }}
           onClose={() => {
             setShowProductModal(false);
             getAllItems().then(setItems); // Reload items after adding

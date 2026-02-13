@@ -34,11 +34,11 @@ export default function ProductReportView({ item, onBack }) {
         setInventoryHistory(history);
 
         const forecastData = [
-          calculateForecast(salesRes, history, item.id, forecastMethod, 30)
+          calculateForecast(salesRes, history, item.id, forecastMethod, 10)
         ];
         setForecasts(forecastData);
 
-        const statuses = calculateAllInventoryStatuses([item], inv, salesRes);
+        const statuses = calculateAllInventoryStatuses([item], inv, salesRes, history);
         const status = statuses.find(s => s.itemId === item.id) || null;
         setInventoryStatus(status);
 
@@ -62,11 +62,11 @@ export default function ProductReportView({ item, onBack }) {
     <div className="product-report-view">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h1 className="h4 mb-1">📦 Produkt-Analyse: {item.name}</h1>
+          <h1 className="h4 mb-1">Produkt-Analyse: {item.name}</h1>
           <p className="text-muted mb-0">SKU: {item.sku}</p>
         </div>
         <button className="btn btn-outline-secondary" onClick={onBack}>
-          ⬅ Zurück
+          Zurück
         </button>
       </div>
 
@@ -85,6 +85,7 @@ export default function ProductReportView({ item, onBack }) {
               forecasts={forecasts}
               recommendations={recommendations}
               items={[item]}
+              inventoryStatuses={inventoryStatus ? [inventoryStatus] : []}
               forecastMethod={forecastMethod}
               onMethodChange={setForecastMethod}
             />
@@ -94,7 +95,7 @@ export default function ProductReportView({ item, onBack }) {
             <div className="col-12 col-lg-6">
               <div className="card shadow-sm border-0">
                 <div className="card-body">
-                  <h5 className="card-title mb-3">📦 Bestandsstatus</h5>
+                  <h5 className="card-title mb-3">Bestandsstatus</h5>
                   {inventoryStatus ? (
                     <div className="border rounded p-3" style={{ backgroundColor: "#f9f9f9" }}>
                       <div className="fw-bold h5 mb-0">{inventoryStatus.currentQuantity} Stück</div>
@@ -106,7 +107,7 @@ export default function ProductReportView({ item, onBack }) {
                       </div>
                       {inventoryStatus.reorderRecommended && (
                         <div className="small text-danger">
-                          🔴 Nachbestellung empfohlen ab: {inventoryStatus.reorderDate}
+                          Nachbestellung empfohlen ab: {inventoryStatus.reorderDate}
                         </div>
                       )}
                     </div>
@@ -120,7 +121,7 @@ export default function ProductReportView({ item, onBack }) {
             <div className="col-12 col-lg-6">
               <div className="card shadow-sm border-0">
                 <div className="card-body">
-                  <h5 className="card-title mb-3">📦 Nachbestell-Empfehlung</h5>
+                  <h5 className="card-title mb-3">Nachbestell-Empfehlung</h5>
                   {recommendations.length > 0 ? (
                     recommendations.map((r, idx) => (
                       <div key={idx} className="border rounded p-3" style={{ backgroundColor: "#f9f9f9" }}>

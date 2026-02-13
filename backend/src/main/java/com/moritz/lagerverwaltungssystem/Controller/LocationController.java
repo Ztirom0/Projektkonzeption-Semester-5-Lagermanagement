@@ -5,9 +5,7 @@ import com.moritz.lagerverwaltungssystem.dto.StorageTypeDTO;
 import com.moritz.lagerverwaltungssystem.service.LocationService;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 // REST-Endpoint für Lagerverwaltung
 // Verwaltet Lagerstandorte und deren Speichertypen
@@ -35,12 +33,7 @@ public class LocationController {
 
     // Ordnet einen Speichertyp einem Lagerstandort zu (POST /api/locations/{id}/storage-types)
     @PostMapping("/{id}/storage-types")
-    public Map<String, Object> assignStorageType(@PathVariable Long id, @RequestBody StorageTypeDTO dto) {
-        locationService.assignStorageType(id, dto.getId());
-        Map<String, Object> response = new HashMap<>();
-        response.put("locationId", id);
-        response.put("storageTypeId", dto.getId());
-        response.put("status", "assigned");
-        return response;
+    public StorageTypeDTO createStorageType(@PathVariable Long id, @RequestBody StorageTypeDTO dto) {
+        return locationService.createStorageTypeForLocation(id, dto);
     }
 }

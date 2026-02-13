@@ -2,7 +2,9 @@ package com.moritz.lagerverwaltungssystem.service;
 
 import com.moritz.lagerverwaltungssystem.dto.StorageTypeDTO;
 import com.moritz.lagerverwaltungssystem.dto.ZoneDTO;
+import com.moritz.lagerverwaltungssystem.entity.Location;
 import com.moritz.lagerverwaltungssystem.entity.StorageType;
+import com.moritz.lagerverwaltungssystem.repository.LocationRepository;
 import com.moritz.lagerverwaltungssystem.repository.StorageTypeRepository;
 import com.moritz.lagerverwaltungssystem.repository.ZoneRepository;
 import org.springframework.stereotype.Service;
@@ -18,11 +20,13 @@ public class StorageTypeService {
     private final StorageTypeRepository storageTypeRepository;
     private final ZoneRepository zoneRepository;
     private final ZoneService zoneService;
+    private final LocationRepository locationRepository;
 
-    public StorageTypeService(StorageTypeRepository storageTypeRepository, ZoneRepository zoneRepository, ZoneService zoneService) {
+    public StorageTypeService(StorageTypeRepository storageTypeRepository, ZoneRepository zoneRepository, ZoneService zoneService, LocationRepository locationRepository) {
         this.storageTypeRepository = storageTypeRepository;
         this.zoneRepository = zoneRepository;
         this.zoneService = zoneService;
+        this.locationRepository = locationRepository;
     }
 
     // Gibt alle Speichertypen zurück
@@ -42,7 +46,21 @@ public class StorageTypeService {
         return toDTO(saved);
     }
 
-    // Gibt alle Zonen eines Speichertyps zurück
+    public StorageTypeDTO createStorageTypeAndAssign(Long locationId, StorageTypeDTO dto) {
+        StorageType type = new StorageType();
+        type.setName(dto.getName());
+        type.setDescription(dto.getDescription());
+
+        StorageType saved = storageTypeRepository.save(type);
+
+        Location location = locationRepository.findById(locationId)
+                .orElseThrow(() -> new RuntimeException("Location not found"));
+        location.getStorageTypes().add(saved);
+        locationRepository.save(location);
+
+        return toDTO(saved);
+    }
+
     public List<ZoneDTO> getZonesById(Long storageTypeId) {
         return zoneService.getZonesByStorageType(storageTypeId);
     }

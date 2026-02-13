@@ -9,23 +9,43 @@
  * @param {Array} sales - Array aller Sales
  * @returns {Object} Status-Objekt mit berechneten Werten
  */
-export function calculateInventoryStatus(item, inventoryList, sales) {
+function resolveEffectiveToday(itemId, inventoryHistory, sales) {
+  // 1) Letzter History-Eintrag (bevorzugt)
+  const historyDates = (inventoryHistory || [])
+    .filter(h => h.itemId === itemId && h.date)
+    .map(h => new Date(h.date))
+    .filter(d => !isNaN(d.getTime()));
+
+  if (historyDates.length > 0) {
+    const lastHistory = new Date(Math.max(...historyDates.map(d => d.getTime())));
+    lastHistory.setDate(lastHistory.getDate() + 1);
+    return lastHistory;
+  }
+
+  // 2) Fallback: letzter Sales-Tag
+  const salesDates = (sales || [])
+    .filter(s => s.itemId === itemId)
+    .map(s => new Date(s.saleDate || s.date))
+    .filter(d => !isNaN(d.getTime()));
+
+  if (salesDates.length > 0) {
+    const lastSale = new Date(Math.max(...salesDates.map(d => d.getTime())));
+    lastSale.setDate(lastSale.getDate() + 1);
+    return lastSale;
+  }
+
+  // 3) Fallback: heute
+  return new Date();
+}
+
+export function calculateInventoryStatus(item, inventoryList, sales, inventoryHistory = []) {
   // 1. Aktuellen Bestand summieren (über alle Lagerorte)
   const itemInventories = inventoryList.filter(inv => inv.itemId === item.id);
   const currentQuantity = itemInventories.reduce((sum, inv) => sum + (inv.quantity || 0), 0);
-  const minQuantity = Math.max(...itemInventories.map(inv => inv.minQuantity || 0), 0);
+  const minQuantity = item.minQuantity || 0;
 
-  // 0. Finde das LETZTE Datum in allen Sales
-  let latestDate = new Date();
-  if (sales && sales.length > 0) {
-    const allDates = sales
-      .map(s => new Date(s.saleDate || s.date))
-      .filter(d => !isNaN(d.getTime())); // Nur gültige Daten
-    
-    if (allDates.length > 0) {
-      latestDate = new Date(Math.max(...allDates.map(d => d.getTime())));
-    }
-  }
+  // 0. Effektives "Heute" = 1 Tag nach letztem History-Eintrag
+  const latestDate = resolveEffectiveToday(item.id, inventoryHistory, sales);
 
   // 3. Verkäufe der letzten 365 Tage vom LETZTEN DATUM aus filtern
   const oneYearBeforeLatest = new Date(latestDate);
@@ -63,12 +83,12 @@ export function calculateInventoryStatus(item, inventoryList, sales) {
     daysRemaining = 999; // "unbegrenzt"
   }
 
-  // 5. Nachbestellempfehlung (wenn weniger als 14 Tage verbleibend)
+  // 5. Nachbestellempfehlung (wenn weniger als 14 Tage verbleibend ODER bereits aufgebraucht)
   const REORDER_LEAD_TIME_DAYS = 14;
-  const reorderRecommended = daysRemaining <= REORDER_LEAD_TIME_DAYS && daysRemaining > 0;
+  const reorderRecommended = daysRemaining <= REORDER_LEAD_TIME_DAYS;
   
   const reorderDaysOffset = Math.max(0, daysRemaining - REORDER_LEAD_TIME_DAYS);
-  const reorderDate = new Date();
+  const reorderDate = new Date(latestDate);
   reorderDate.setDate(reorderDate.getDate() + reorderDaysOffset);
 
   return {
@@ -90,6 +110,6 @@ export function calculateInventoryStatus(item, inventoryList, sales) {
 /**
  * Berechnet den Status für alle Items
  */
-export function calculateAllInventoryStatuses(items, inventoryList, sales) {
-  return items.map(item => calculateInventoryStatus(item, inventoryList, sales));
+export function calculateAllInventoryStatuses(items, inventoryList, sales, inventoryHistory = []) {
+  return items.map(item => calculateInventoryStatus(item, inventoryList, sales, inventoryHistory));
 }

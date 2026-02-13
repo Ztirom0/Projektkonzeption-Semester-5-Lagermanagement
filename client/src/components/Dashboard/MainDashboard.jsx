@@ -41,6 +41,26 @@ export default function MainDashboard() {
       .filter(Boolean);
   };
 
+  const getEffectiveToday = (history, normalizedSales) => {
+    const historyDates = (history || [])
+      .map(h => new Date(h.date))
+      .filter(d => !Number.isNaN(d.getTime()));
+
+    if (historyDates.length > 0) {
+      const lastHistory = new Date(Math.max(...historyDates.map(d => d.getTime())));
+      lastHistory.setDate(lastHistory.getDate() + 1);
+      return lastHistory;
+    }
+
+    if (normalizedSales.length > 0) {
+      const lastSale = new Date(Math.max(...normalizedSales.map(s => s.__dateObj.getTime())));
+      lastSale.setDate(lastSale.getDate() + 1);
+      return lastSale;
+    }
+
+    return new Date();
+  };
+
   const buildChartData = (sales, history, ids, method) => {
     const normalized = normalizeSales(sales);
     const grouped = {};
@@ -58,13 +78,16 @@ export default function MainDashboard() {
         prognose: null
       }));
 
+    if (historical.length > 0) {
+      const lastHistorical = historical[historical.length - 1];
+      console.log("[SalesChart] Letzter Historie-Tag:", lastHistorical.date);
+    }
+
     if (!ids.length) return historical;
 
-    const latestDate = normalized.length > 0
-      ? new Date(Math.max(...normalized.map(s => s.__dateObj.getTime())))
-      : new Date();
+    const latestDate = getEffectiveToday(history, normalized);
 
-    const forecastDates = Array.from({ length: 30 }, (_, i) => {
+    const forecastDates = Array.from({ length: 10 }, (_, i) => {
       const d = new Date(latestDate);
       d.setDate(d.getDate() + i + 1);
       return d;
@@ -73,8 +96,11 @@ export default function MainDashboard() {
     const forecasts = ids
       .map((id) => {
         try {
-          return calculateForecast(sales, history, id, method, 30);
-        } catch {
+          // Logge alle Input-Daten für diesen Artikel
+          const forecast = calculateForecast(sales, history, id, method, 10);
+          return forecast;
+        } catch (err) {
+          console.error(`❌ [FORECAST ERROR] ItemID ${id}:`, err);
           return null;
         }
       })
@@ -82,10 +108,9 @@ export default function MainDashboard() {
 
     const forecastTotals = forecastDates.map((_, idx) => {
       return forecasts.reduce((sum, fc) => {
-        if (!fc?.points?.[idx]) return sum;
-        const prevQty = idx === 0 ? fc.startQuantity : fc.points[idx - 1].quantity;
-        const currQty = fc.points[idx].quantity;
-        return sum + Math.max(0, prevQty - currQty);
+        if (!fc?.points || !fc.points[idx]) return sum;
+        // Verwende die predictedSales für diesen spezifischen Tag
+        return sum + fc.points[idx].predictedSales;
       }, 0);
     });
 
@@ -94,6 +119,11 @@ export default function MainDashboard() {
       verkauf: null,
       prognose: Math.round(forecastTotals[idx])
     }));
+
+    if (historical.length > 0 && forecastSeries.length > 0) {
+      const lastHistorical = historical[historical.length - 1];
+      lastHistorical.prognose = lastHistorical.verkauf;
+    }
 
     return [...historical, ...forecastSeries];
   };
@@ -111,7 +141,8 @@ export default function MainDashboard() {
 
         // Lade Verkaufsdaten für Haupt-Chart
         const sales = await getSales();
-        
+
+        let combinedHistory = [];
         if (sales.length > 0) {
           const ids = items.map((item) => item.id);
 
@@ -119,7 +150,7 @@ export default function MainDashboard() {
             getInventoryHistory(itemId, 180).catch(() => [])
           );
           const historyResults = await Promise.all(historyPromises);
-          const combinedHistory = historyResults.flat();
+          combinedHistory = historyResults.flat();
 
           const chartPoints = buildChartData(sales, combinedHistory, ids, forecastMethod);
           setChartData(chartPoints);
@@ -131,7 +162,7 @@ export default function MainDashboard() {
         const inventoryList = await getInventory();
 
         // Berechne Status für alle Items im Frontend
-        const calculatedStatuses = calculateAllInventoryStatuses(items, inventoryList, sales);
+        const calculatedStatuses = calculateAllInventoryStatuses(items, inventoryList, sales, combinedHistory);
         setInventoryStatus(calculatedStatuses);
 
         // Berechne Alerts im Frontend
