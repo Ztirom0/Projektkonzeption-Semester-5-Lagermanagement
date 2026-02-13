@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+// Service für Artikelverwaltung
+// Verwaltung von Produkten und deren Eigenschaften
 @Service
 public class ItemService {
 
@@ -17,6 +19,7 @@ public class ItemService {
         this.repository = repository;
     }
 
+    // Gibt alle Artikel zurück
     public List<ItemDTO> getAllItems() {
         return repository.findAll()
                 .stream()
@@ -24,6 +27,7 @@ public class ItemService {
                 .collect(Collectors.toList());
     }
 
+    // Erstellt einen neuen Artikel
     public ItemDTO addItem(ItemDTO dto) {
         Item item = new Item(dto.getName(), dto.getSku(), dto.getUnit(), dto.getMinQuantity());
         Item saved = repository.save(item);

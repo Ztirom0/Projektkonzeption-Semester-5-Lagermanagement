@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+// Service für Zonenverwaltung
+// Verwaltet Lagerzonen, ihre Kategorien und enthaltenen Lagerplätze
 @Service
 public class ZoneService {
 
@@ -31,6 +33,7 @@ public class ZoneService {
         this.inventoryService = inventoryService;
     }
 
+    // Gibt alle Zonen eines Speichertyps mit ihren Plätzen und Details zurück
     public List<ZoneDTO> getZonesByStorageType(Long storageTypeId) {
         return zoneRepository.findByStorageTypeId(storageTypeId)
                 .stream()
@@ -45,6 +48,7 @@ public class ZoneService {
                 .collect(Collectors.toList());
     }
 
+    // Erstellt eine neue Zone in einem Speichertyp
     public ZoneDTO addZone(Long storageTypeId, ZoneDTO dto) {
         StorageType storageType = storageTypeRepository.findById(storageTypeId)
                 .orElseThrow(() -> new RuntimeException("StorageType not found"));
@@ -59,13 +63,14 @@ public class ZoneService {
         return new ZoneDTO(saved.getId(), saved.getName(), mapCategory(saved.getCategory()), List.of());
     }
 
-    // Hilfsmethoden für Mapping
+    // Hilfsmethode: konvertiert Place-Entity zu DTO
     private PlaceDTO mapPlaceWithDetails(Place place) {
         // Für ZoneDTO verwenden wir weiterhin einfache PlaceDTO
         // Die Detail-Info wird über einen separaten Endpoint geholt
         return new PlaceDTO(place.getId(), place.getCode(), place.getCapacity());
     }
 
+    // Hilfsmethode: konvertiert ZoneCategory-Entity zu DTO
     private ZoneCategoryDTO mapCategory(ZoneCategory category) {
         return category != null
                 ? new ZoneCategoryDTO(category.getId(), category.getName())

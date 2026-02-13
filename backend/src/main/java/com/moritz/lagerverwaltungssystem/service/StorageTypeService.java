@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+// Service für Speichertypen
+// Verwaltet verschiedene Lagerungsarten und deren Zonen
 @Service
 public class StorageTypeService {
 
@@ -23,12 +25,14 @@ public class StorageTypeService {
         this.zoneService = zoneService;
     }
 
+    // Gibt alle Speichertypen zurück
     public List<StorageTypeDTO> getAllStorageTypes() {
         return storageTypeRepository.findAll().stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 
+    // Erstellt einen neuen Speichertyp
     public StorageTypeDTO createStorageType(StorageTypeDTO dto) {
         StorageType type = new StorageType();
         type.setName(dto.getName());
@@ -38,10 +42,12 @@ public class StorageTypeService {
         return toDTO(saved);
     }
 
+    // Gibt alle Zonen eines Speichertyps zurück
     public List<ZoneDTO> getZonesById(Long storageTypeId) {
         return zoneService.getZonesByStorageType(storageTypeId);
     }
 
+    // Hilfsmethode: konvertiert StorageType-Entity zu DTO
     private StorageTypeDTO toDTO(StorageType type) {
         StorageTypeDTO dto = new StorageTypeDTO();
         dto.setId(type.getId());

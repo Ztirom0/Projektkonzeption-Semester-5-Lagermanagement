@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+// REST-Endpoint für Lagerzonen und Lagerplätze
+// Verwaltet Zonen, Lagerplätze und deren Inventory
 @RestController
 @RequestMapping("/api/storage-zones")
 public class StorageZoneController {
@@ -26,13 +28,13 @@ public class StorageZoneController {
         this.inventoryService = inventoryService;
     }
 
-    // GET /storage-types/{id}/zone
+    // Gibt alle Zonen eines Speichertyps zurück (GET /api/storage-zones/{id}/zone)
     @GetMapping("/{id}/zone")
     public List<ZoneDTO> getZones(@PathVariable Long id) {
         return zoneService.getZonesByStorageType(id);
     }
 
-    // POST /storage-types/{id}/zones
+    // Erstellt eine neue Zone (POST /api/storage-zones/{id}/zones)
     @PostMapping("/{id}/zones")
     public ZoneDTO addZone(@PathVariable Long id,
                                            @RequestBody ZoneDTO zoneRequest) {
@@ -40,7 +42,7 @@ public class StorageZoneController {
         return created;
     }
 
-    // POST /zone/{id}/places
+    // Erstellt einen neuen Lagerplatz (POST /api/storage-zones/zone/{id}/places)
     @PostMapping("/zone/{id}/places")
     public PlaceDTO addPlace(@PathVariable Long id,
                                              @RequestBody PlaceDTO placeRequest) {
@@ -48,7 +50,7 @@ public class StorageZoneController {
         return created;
     }
 
-    // POST /places/{id}/items - Zuordnung von Item zu Place über Inventory
+    // Ordnet einen Artikel einem Lagerplatz zu (POST /api/storage-zones/places/{id}/items)
     @PostMapping("/places/{id}/items")
     public PlaceDTO assignItemToPlace(@PathVariable Long id,
                                       @RequestBody Map<String, Object> request) {
@@ -58,7 +60,7 @@ public class StorageZoneController {
         return updated;
     }
 
-    // GET /places/{id}/details - Platz-Details mit Inventory-Informationen
+    // Gibt Details eines Lagerplatzes mit Bestandsinformationen zurück (GET /api/storage-zones/places/{id}/details)
     @GetMapping("/places/{id}/details")
     public PlaceDetailDTO getPlaceDetails(@PathVariable Long id) {
         return inventoryService.getPlaceDetails(id);

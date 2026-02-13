@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// REST-Endpoint für Artikelverwaltung
+// Verwaltet Produkte und deren Eigenschaften
 @RestController
 @RequestMapping("/api/items")
 public class ItemController {
@@ -16,13 +18,13 @@ public class ItemController {
         this.service = service;
     }
 
-    // GET /items
+    // Gibt alle Artikel zurück (GET /api/items)
     @GetMapping
     public List<ItemDTO> getAllItems() {
         return service.getAllItems();
     }
 
-    // POST /items
+    // Erstellt einen neuen Artikel (POST /api/items)
     @PostMapping
     public ItemDTO addItem(@RequestBody ItemDTO dto) {
         ItemDTO created = service.addItem(dto);

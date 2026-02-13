@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// REST-Endpoint für Zonenkategorien
+// Verwaltet Kategorien zur Klassifizierung von Lagerzonen
 @RestController
 @RequestMapping("/api/zone-categories")
 public class ZoneCategoryController {
@@ -16,13 +18,13 @@ public class ZoneCategoryController {
         this.service = service;
     }
 
-    // GET /zone-categories
+    // Gibt alle Zonenkategorien zurück (GET /api/zone-categories)
     @GetMapping
     public List<ZoneCategoryDTO> getAllCategories() {
         return service.getAllCategories();
     }
 
-    // POST /zone-categories
+    // Erstellt eine neue Zonenkategorie (POST /api/zone-categories)
     @PostMapping
     public ZoneCategoryDTO addCategory(@RequestBody ZoneCategoryDTO dto) {
         return service.addCategory(dto);

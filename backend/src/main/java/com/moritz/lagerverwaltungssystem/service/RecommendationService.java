@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+// Service für Bestellempfehlungen
+// Analysiert Bestände und gibt Empfehlungen basierend auf Bestand und Prognosen
 @Service
 public class RecommendationService {
 
@@ -23,6 +25,8 @@ public class RecommendationService {
         this.forecastService = forecastService;
     }
 
+    // Gibt Bestellempfehlungen für alle Artikel zurück
+    // Prüft kritische Bestände und benutzt Prognosen für niedrige Bestände
     public List<RecommendationDTO> getRecommendations() {
         List<Inventory> allInventory = inventoryRepository.findAll();
         

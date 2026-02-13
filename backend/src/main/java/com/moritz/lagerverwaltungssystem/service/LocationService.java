@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+// Service für Lagerverwaltung
+// Verwaltet Lagerstandorte und deren Speichertypen
 @Service
 public class LocationService {
 
@@ -22,12 +24,14 @@ public class LocationService {
         this.storageTypeRepository = storageTypeRepository;
     }
 
+    // Gibt alle Lagerstandorte mit ihren Speichertypen zurück
     public List<LocationDTO> getAllLocations() {
         return locationRepository.findAll().stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 
+    // Erstellt einen neuen Lagerstandort
     public LocationDTO createLocation(LocationDTO dto) {
         Location location = new Location();
         location.setName(dto.getName());
@@ -37,6 +41,7 @@ public class LocationService {
         return toDTO(saved);
     }
 
+    // Ordnet einen Speichertyp einem Lagerstandort zu
     public void assignStorageType(Long locationId, Long storageTypeId) {
         Location location = locationRepository.findById(locationId)
                 .orElseThrow(() -> new RuntimeException("Location not found"));
@@ -48,6 +53,7 @@ public class LocationService {
         locationRepository.save(location);
     }
 
+    // Hilfsmethode: konvertiert Location-Entity zu DTO
     private LocationDTO toDTO(Location location) {
         LocationDTO dto = new LocationDTO();
         dto.setId(location.getId());

@@ -6,7 +6,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
+// REST-Endpoint für Verkaufsverwaltung
+// Verwaltet Verkaufsaufzeichnungen
 @RestController
 @RequestMapping("/api/sales")
 public class SalesController {
@@ -17,6 +18,7 @@ public class SalesController {
         this.service = service;
     }
 
+    // Gibt alle erfassten Verkäufe zurück (GET /api/sales)
     @GetMapping
     public List<SaleDTO> getSales() {
         return service.getSales();

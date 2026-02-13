@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+// REST-Endpoint für Bestandsverwaltung
+// Verwaltet Bestandsdaten, Historie und Status
 @RestController
 @RequestMapping("/api/inventory")
 public class InventoryController {
@@ -19,11 +21,13 @@ public class InventoryController {
         this.inventoryService = inventoryService;
     }
 
+    // Gibt alle aktuellen Bestände zurück (GET /api/inventory)
     @GetMapping
     public List<InventoryDTO> getInventory() {
         return inventoryService.getAllInventory();
     }
 
+    // Erstellt einen neuen Bestandseintrag (POST /api/inventory)
     @PostMapping
     public InventoryDTO createInventory(@RequestBody Map<String, Object> request) {
         Long placeId = ((Number) request.get("placeId")).longValue();
@@ -34,6 +38,7 @@ public class InventoryController {
         return inventoryService.createInventory(placeId, itemId, quantity, minQuantity);
     }
 
+    // Gibt die Bestandshistorie eines Artikels zurück (GET /api/inventory/history/{itemId})
     @GetMapping("/history/{itemId}")
     public List<InventoryHistoryDTO> getInventoryHistory(
             @PathVariable Long itemId,
@@ -41,6 +46,7 @@ public class InventoryController {
         return inventoryService.getInventoryHistory(itemId, days);
     }
 
+    // Gibt den Status eines Artikels mit Verkaufsrate und Nachbestelldatum zurück (GET /api/inventory/status/{itemId})
     @GetMapping("/status/{itemId}")
     public InventoryStatusDTO getInventoryStatus(@PathVariable Long itemId) {
         return inventoryService.getInventoryStatus(itemId);

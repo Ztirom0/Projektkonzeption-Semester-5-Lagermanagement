@@ -13,6 +13,8 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
+// Initialisierer für Lagerdaten
+// Lädt Test- und Beispieldaten aus Data.txt beim Start der Anwendung
 @Component
 public class WarehouseInitializer implements ApplicationRunner {
 
@@ -46,8 +48,11 @@ public class WarehouseInitializer implements ApplicationRunner {
         this.saleRepository = saleRepository;
     }
 
+    // Wird beim Start der Anwendung ausgeführt
+    // Lädt Lagerdaten aus JSON-Datei falls Datenbank leer ist
     @Override
     public void run(ApplicationArguments args) throws Exception {
+        // Überspringe wenn Daten bereits vorhanden sind
         if (itemRepository.count() > 0) return;
 
         ObjectMapper mapper = new ObjectMapper();

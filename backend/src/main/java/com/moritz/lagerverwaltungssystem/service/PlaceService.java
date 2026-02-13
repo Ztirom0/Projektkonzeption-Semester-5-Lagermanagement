@@ -11,6 +11,8 @@ import com.moritz.lagerverwaltungssystem.repository.PlaceRepository;
 import com.moritz.lagerverwaltungssystem.repository.ZoneRepository;
 import org.springframework.stereotype.Service;
 
+// Service für Lagerplatzverwaltung
+// Verwaltet einzelne Lagerplätze und deren Zuordnungen zu Zonen und Artikeln
 @Service
 public class PlaceService {
 
@@ -26,6 +28,8 @@ public class PlaceService {
         this.itemRepository = itemRepository;
     }
 
+    // Ordnet einen Artikel einem Lagerplatz zu
+    // Die Menge wird über den InventoryService verwaltet
     public PlaceDTO assignItemToPlace(Long placeId, Long itemId, Integer quantity) {
         Place place = placeRepository.findById(placeId)
                 .orElseThrow(() -> new RuntimeException("Place not found"));
@@ -43,17 +47,18 @@ public class PlaceService {
         );
     }
 
-public PlaceDTO addPlace(Long zoneId, PlaceDTO dto) {
-    Zone zone = zoneRepository.findById(zoneId)
-            .orElseThrow(() -> new RuntimeException("Zone not found"));
+    // Erstellt einen neuen Lagerplatz in einer Zone
+    public PlaceDTO addPlace(Long zoneId, PlaceDTO dto) {
+        Zone zone = zoneRepository.findById(zoneId)
+                .orElseThrow(() -> new RuntimeException("Zone not found"));
 
-    Place place = new Place(dto.getCode(), dto.getCapacity(), zone);
-    Place saved = placeRepository.save(place);
+        Place place = new Place(dto.getCode(), dto.getCapacity(), zone);
+        Place saved = placeRepository.save(place);
 
-    return new PlaceDTO(saved.getId(),
-                        saved.getCode(),
-                        saved.getCapacity());
-}
+        return new PlaceDTO(saved.getId(),
+                                saved.getCode(),
+                                saved.getCapacity());
+    }
 
 
 }

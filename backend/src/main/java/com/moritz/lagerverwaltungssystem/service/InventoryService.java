@@ -21,6 +21,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
+// Service für Bestandsverwaltung
+// Verwaltet Bestände an Lagerplätzen, Historie und Bestandsstatus
 @Service
 public class InventoryService {
 
@@ -41,6 +43,7 @@ public class InventoryService {
         this.saleRepository = saleRepository;
     }
 
+    // Gibt alle Bestände als DTO zurück
     public List<InventoryDTO> getAllInventory() {
         return inventoryRepository.findAll().stream()
                 .map(inv -> new InventoryDTO(
@@ -53,6 +56,7 @@ public class InventoryService {
                 .collect(Collectors.toList());
     }
 
+    // Erstellt einen neuen Bestandseintrag für einen Artikel an einem Lagerplatz
     public InventoryDTO createInventory(Long placeId, Long itemId, int quantity, int minQuantity) {
         Place place = placeRepository.findById(placeId)
                 .orElseThrow(() -> new RuntimeException("Place not found"));
@@ -66,6 +70,7 @@ public class InventoryService {
         return new InventoryDTO(saved.getId(), item.getId(), place.getId(), quantity, minQuantity);
     }
 
+    // Gibt die komplette Bestandshistorie eines Artikels zurück
     public List<InventoryHistoryDTO> getInventoryHistory(Long itemId, int days) {
         // Verify item exists
         itemRepository.findById(itemId)
@@ -79,6 +84,7 @@ public class InventoryService {
                 .collect(Collectors.toList());
     }
 
+    // Berechnet Bestandsstatus: aktuelle Menge, Minimum, Verkaufsrate und Nachbestelldatum
     public InventoryStatusDTO getInventoryStatus(Long itemId) {
         // Get item
         Item item = itemRepository.findById(itemId)

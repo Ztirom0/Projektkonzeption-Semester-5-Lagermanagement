@@ -6,7 +6,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
+// REST-Endpoint für Bestandswarnungen
+// Stellt API-Endpunkte zur Abfrage von Unterbeständen zur Verfügung
 @RestController
 @RequestMapping("/api/alerts")
 public class AlertController {
@@ -17,6 +18,7 @@ public class AlertController {
         this.service = service;
     }
 
+    // Gibt alle aktuellen Warnungen ab (GET /api/alerts)
     @GetMapping
     public List<AlertDTO> getAlerts() {
         return service.getAlerts();

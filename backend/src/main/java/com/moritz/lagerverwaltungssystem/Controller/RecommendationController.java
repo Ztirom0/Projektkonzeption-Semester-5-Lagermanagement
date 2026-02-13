@@ -7,7 +7,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
+// REST-Endpoint für Bestellempfehlungen
+// Gibt Empfehlungen zur Nachbestellung basierend auf Bestand und Prognosen
 @RestController
 @RequestMapping("/api/recommendations")
 public class RecommendationController {
@@ -18,6 +19,7 @@ public class RecommendationController {
         this.service = service;
     }
 
+    // Gibt alle Bestellempfehlungen zurück (GET /api/recommendations)
     @GetMapping
     public List<RecommendationDTO> getRecommendations() {
         return service.getRecommendations();

@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 
+// Service für Nachfragevorhersagen
+// Berechnet zukünftige Bestandsanforderungen basierend auf Verkaufsdaten
+// Unterstützt mehrere Prognosemethoden: Durchschnitt, lineare Regression, exponentielle Glättung
 @Service
 public class ForecastService {
 
@@ -21,6 +24,8 @@ public class ForecastService {
         this.inventoryService = inventoryService;
     }
 
+    // Hauptmethode für Prognoseberechnung
+    // Wählt Methode und berechnet vorhergesagte Nachfrage für den Zeitraum
     public ForecastDTO calculateForecast(ForecastRequestDTO req) {
         List<Sale> sales = saleRepository.findByItemIdOrderByDateAsc(req.getItemId());
 
@@ -65,7 +70,8 @@ public class ForecastService {
         );
     }
 
-    // Lineare Regression für Trend
+    // Berechnet Trend mittels linearer Regression
+    // Passt eine gerade Linie an die Verkaufsdaten an um zukünftige Werte vorherzusagen
     private double linearRegression(List<Sale> sales) {
         int n = sales.size();
         double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
@@ -84,7 +90,8 @@ public class ForecastService {
         return intercept + slope * n;
     }
 
-    // Exponential Smoothing mit Alpha=0.3
+    // Exponentielles Glätten zur Glattung von Schwankungen
+    // Gewichtet neuere Daten höher als ältere (Alpha=0.3)
     private double exponentialSmoothing(List<Sale> sales) {
         double alpha = 0.3;
         double s = sales.get(0).getSoldQuantity();
@@ -96,6 +103,8 @@ public class ForecastService {
         return s;
     }
 
+    // Berechnet das Datum für Nachbestellungen
+    // Berücksichtigt aktuelle Menge, minimalen Bestand und tägliche Nachfrage
     private LocalDate calculateReorderDate(Long itemId, double dailyDemand) {
         List<InventoryDTO> inventories = inventoryService.getAllInventory().stream()
                 .filter(inv -> inv.getItemId().equals(itemId))

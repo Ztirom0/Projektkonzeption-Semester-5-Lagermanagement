@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// REST-Endpoint für Speichertypen
+// Verwaltet verschiedene Lagerungsarten und deren Zonen
 @RestController
 @RequestMapping("/api/storage-types")
 public class StorageTypeController {
@@ -17,16 +19,19 @@ public class StorageTypeController {
         this.storageTypeService = storageTypeService;
     }
 
+    // Gibt alle Speichertypen zurück (GET /api/storage-types)
     @GetMapping
     public List<StorageTypeDTO> getAll() {
         return storageTypeService.getAllStorageTypes();
     }
 
+    // Erstellt einen neuen Speichertyp (POST /api/storage-types)
     @PostMapping
     public StorageTypeDTO create(@RequestBody StorageTypeDTO dto) {
         return storageTypeService.createStorageType(dto);
     }
 
+    // Gibt alle Zonen eines Speichertyps zurück (GET /api/storage-types/{id}/zones)
     @GetMapping("/{id}/zones")
     public List<ZoneDTO> getZones(@PathVariable Long id) {
         return storageTypeService.getZonesById(id);
