@@ -31,10 +31,12 @@ public class ItemService {
 
     // Erstellt einen neuen Artikel
     public ItemDTO addItem(ItemDTO dto) {
+        // Normalisiere SKU (Großbuchstaben, keine Leerzeichen)
         String normalizedSku = dto.getSku() == null ? null : dto.getSku().toUpperCase().trim();
         if (normalizedSku == null || normalizedSku.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "SKU ist erforderlich");
         }
+        // Prüfe auf Duplikate
         if (repository.existsBySku(normalizedSku)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "SKU ist bereits vergeben");
         }

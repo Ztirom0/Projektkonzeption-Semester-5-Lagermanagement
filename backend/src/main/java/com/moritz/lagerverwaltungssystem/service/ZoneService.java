@@ -63,6 +63,7 @@ public class ZoneService {
         return new ZoneDTO(saved.getId(), saved.getName(), mapCategory(saved.getCategory()), List.of());
     }
 
+    // Hilfsmethode: erstellt Zone
     public ZoneDTO createZoneAndAssign(Long storageTypeId, ZoneDTO dto) {
         return addZone(storageTypeId, dto);
     }

@@ -31,7 +31,7 @@ public class LocationController {
         return locationService.createLocation(dto);
     }
 
-    // Ordnet einen Speichertyp einem Lagerstandort zu (POST /api/locations/{id}/storage-types)
+    // Erstellt einen neuen Speichertyp und ordnet ihn einem Lagerstandort zu (POST /api/locations/{id}/storage-types)
     @PostMapping("/{id}/storage-types")
     public StorageTypeDTO createStorageType(@PathVariable Long id, @RequestBody StorageTypeDTO dto) {
         return locationService.createStorageTypeForLocation(id, dto);

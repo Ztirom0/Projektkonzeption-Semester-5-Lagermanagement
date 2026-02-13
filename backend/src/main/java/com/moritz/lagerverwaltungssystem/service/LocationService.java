@@ -53,6 +53,7 @@ public class LocationService {
         locationRepository.save(location);
     }
 
+    // Erstellt Speichertyp und ordnet ihn Lagerstandort zu
     public StorageTypeDTO createStorageTypeForLocation(Long locationId, StorageTypeDTO dto) {
         StorageType type = new StorageType();
         type.setName(dto.getName());

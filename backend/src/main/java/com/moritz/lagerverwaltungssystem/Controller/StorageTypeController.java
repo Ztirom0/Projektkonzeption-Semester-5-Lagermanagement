@@ -44,6 +44,7 @@ public class StorageTypeController {
         return storageTypeService.getZonesById(id);
     }
 
+    // Erstellt eine neue Zone in einem Speichertyp (POST /api/storage-types/{id}/zones)
     @PostMapping("/{id}/zones")
     public ZoneDTO addZone(@PathVariable Long id,
                           @RequestBody ZoneDTO zoneRequest) {

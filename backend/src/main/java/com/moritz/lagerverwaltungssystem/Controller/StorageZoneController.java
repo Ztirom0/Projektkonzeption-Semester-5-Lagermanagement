@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
-// REST-Endpoint für Lagerzonen und Lagerplätze
-// Verwaltet Zonen, Lagerplätze und deren Inventory
+// REST-Endpoint für Lagerplätze und deren Inventory
+// Verwaltet Lagerplätze und Artikel-Zuordnungen
 @RestController
 @RequestMapping("/api")
 public class StorageZoneController {
@@ -24,7 +24,7 @@ public class StorageZoneController {
         this.inventoryService = inventoryService;
     }
 
-    // POST /zones/{zoneId}/places
+    // Erstellt einen neuen Lagerplatz in einer Zone (POST /api/zones/{zoneId}/places)
     @PostMapping("/zones/{zoneId}/places")
     public PlaceDTO addPlace(@PathVariable Long zoneId,
                             @RequestBody PlaceDTO placeRequest) {

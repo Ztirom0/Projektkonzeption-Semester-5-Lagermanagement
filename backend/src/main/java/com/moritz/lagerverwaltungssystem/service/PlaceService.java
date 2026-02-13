@@ -32,26 +32,19 @@ public class PlaceService {
     }
 
     // Ordnet einen Artikel einem Lagerplatz zu
-    // Die Menge wird über den InventoryService verwaltet
+    // Erstellt Bestandseintrag über InventoryService
     public PlaceDTO assignItemToPlace(Long placeId, Long itemId, Integer quantity) {
-        System.out.println("🔄 assignItemToPlace: placeId=" + placeId + ", itemId=" + itemId + ", quantity=" + quantity);
-
         Place place = placeRepository.findById(placeId)
                 .orElseThrow(() -> new RuntimeException("Place not found"));
 
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new RuntimeException("Item not found"));
 
-        System.out.println("✅ Found place: " + place.getCode() + ", item: " + item.getName());
-
-        // Create inventory entry
+        // Erstelle Bestandseintrag
         inventoryService.createInventory(placeId, itemId, quantity);
 
-        System.out.println("✅ Inventory created");
-
-        // Reload place to get updated inventory
+        // Aktualisiere Lagerplatz mit neuen Bestandsdaten
         place = placeRepository.findById(placeId).get();
-        System.out.println("✅ Place reloaded, inventory: " + place.getInventory());
 
         PlaceDTO result = new PlaceDTO(
                 place.getId(),
@@ -79,6 +72,7 @@ public class PlaceService {
                             saved.getCapacity());
     }
 
+    // Hilfsmethode: erstellt Lagerplatz
     public PlaceDTO createPlaceAndAssign(Long zoneId, PlaceDTO dto) {
         return addPlace(zoneId, dto);
     }

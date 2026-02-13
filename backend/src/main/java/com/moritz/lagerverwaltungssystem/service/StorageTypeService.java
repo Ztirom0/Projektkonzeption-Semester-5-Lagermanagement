@@ -46,6 +46,7 @@ public class StorageTypeService {
         return toDTO(saved);
     }
 
+    // Erstellt Speichertyp und ordnet ihn Lagerstandort zu
     public StorageTypeDTO createStorageTypeAndAssign(Long locationId, StorageTypeDTO dto) {
         StorageType type = new StorageType();
         type.setName(dto.getName());
