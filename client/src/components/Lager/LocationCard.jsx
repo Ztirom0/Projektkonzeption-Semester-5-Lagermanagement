@@ -1,4 +1,6 @@
 // src/components/Lager/LocationCard.jsx
+// Karte für einen Standort inkl. Lagertypen, Zonen und Plätze
+
 export default function LocationCard({
   location,
   isExpanded,
@@ -10,6 +12,7 @@ export default function LocationCard({
 }) {
   return (
     <div className="card mb-3 shadow-sm">
+      {/* Header: Standortname + Aktionen */}
       <div 
         className="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center"
         style={{ cursor: 'pointer' }}
@@ -23,11 +26,14 @@ export default function LocationCard({
               {location.storageTypes?.length || 0} Typen
             </span>
           </h5>
+
           {location.address && (
             <small className="text-muted">{location.address}</small>
           )}
         </div>
+
         <div className="d-flex align-items-center gap-0">
+          {/* Lagertyp hinzufügen */}
           <button
             className="btn btn-sm btn-outline-primary"
             onClick={(e) => {
@@ -38,12 +44,15 @@ export default function LocationCard({
             <i className="bi bi-plus-circle me-1"></i>
             Lagertyp
           </button>
+
+          {/* Expand/Collapse */}
           <button className="btn btn-sm btn-link text-decoration-none text-primary">
             <i className={`bi ${isExpanded ? 'bi-chevron-down' : 'bi-chevron-right'}`}></i>
           </button>
         </div>
       </div>
 
+      {/* Inhalt: Lagertypen */}
       {isExpanded && (
         <div className="card-body">
           {(!location.storageTypes || location.storageTypes.length === 0) ? (
@@ -75,9 +84,12 @@ export default function LocationCard({
   );
 }
 
+/* ---------------- Lagertyp-Bereich ---------------- */
+
 function StorageTypeSection({ type, onAddZone, onAddPlace, onAssignItem }) {
   return (
     <div className="mb-4">
+      {/* Lagertyp-Header */}
       <div className="d-flex align-items-center justify-content-between mb-0">
         <h6 className="mb-0 me-3 fw-semibold">
           <i className="bi bi-box-seam me-0 text-primary"></i>
@@ -86,6 +98,8 @@ function StorageTypeSection({ type, onAddZone, onAddPlace, onAssignItem }) {
             {type.zones?.length || 0} Zonen
           </span>
         </h6>
+
+        {/* Zone hinzufügen */}
         <button
           className="btn btn-sm btn-outline-success"
           onClick={() => onAddZone?.(type)}
@@ -95,6 +109,7 @@ function StorageTypeSection({ type, onAddZone, onAddPlace, onAssignItem }) {
         </button>
       </div>
 
+      {/* Zonen-Tabelle */}
       {type.zones && type.zones.length > 0 && (
         <div className="ms-4">
           <div className="table-responsive">
@@ -126,6 +141,8 @@ function StorageTypeSection({ type, onAddZone, onAddPlace, onAssignItem }) {
   );
 }
 
+/* ---------------- Hilfsfunktion: Auslastung ---------------- */
+
 function getUtilization(quantity, capacity) {
   const safeCapacity = Number(capacity) || 0;
   const safeQuantity = Number(quantity) || 0;
@@ -133,17 +150,23 @@ function getUtilization(quantity, capacity) {
   return Math.min(100, Math.round((safeQuantity / safeCapacity) * 100));
 }
 
+/* ---------------- Zonenzeile ---------------- */
+
 function ZoneRow({ zone, onAddPlace, onAssignItem }) {
   const places = zone.places || [];
   const totalCapacity = places.reduce((sum, p) => sum + (Number(p.capacity) || 0), 0);
   const totalQuantity = places.reduce((sum, p) => sum + (Number(p.quantity) || 0), 0);
-  const zoneUtil = totalCapacity > 0 ? Math.min(100, Math.round((totalQuantity / totalCapacity) * 100)) : 0;
+  const zoneUtil = totalCapacity > 0
+    ? Math.min(100, Math.round((totalQuantity / totalCapacity) * 100))
+    : 0;
 
   return (
     <tr>
+      {/* Zonenname + Platz hinzufügen */}
       <td className="fw-semibold">
         <i className="bi bi-tag me-0 text-secondary"></i>
         {zone.name}
+
         <div>
           <button
             className="btn btn-sm btn-outline-secondary mt-1"
@@ -154,7 +177,11 @@ function ZoneRow({ zone, onAddPlace, onAssignItem }) {
           </button>
         </div>
       </td>
+
+      {/* Anzahl Plätze */}
       <td>{places.length}</td>
+
+      {/* Platz-Auslastung */}
       <td>
         {places.length > 0 ? (
           <div>
@@ -162,20 +189,25 @@ function ZoneRow({ zone, onAddPlace, onAssignItem }) {
               const placeUtil = getUtilization(place.quantity, place.capacity);
               const capacityLabel = place.capacity ?? 0;
               const quantityLabel = place.quantity ?? 0;
-              const isEmpty = !place.itemName && !place.item?.name && quantityLabel === 0;
+              const isEmpty =
+                !place.itemName && !place.item?.name && quantityLabel === 0;
+
               return (
                 <div key={place.id} className="small mb-1">
+                  {/* Platz-Code */}
                   <span className="badge bg-secondary bg-opacity-10 text-secondary border me-1">
                     <i className="bi bi-diagram-3 me-1"></i>
                     {place.code}
                   </span>
+
+                  {/* Artikel zuweisen oder anzeigen */}
                   {isEmpty ? (
                     <button
                       className="btn btn-sm btn-outline-primary"
                       title="Artikel zuweisen"
                       onClick={(e) => {
                         e.preventDefault();
-                        onAssignItem && onAssignItem(place);
+                        onAssignItem?.(place);
                       }}
                     >
                       <i className="bi bi-plus-circle me-1"></i>Assign Item
@@ -185,6 +217,8 @@ function ZoneRow({ zone, onAddPlace, onAssignItem }) {
                       {place.itemName ?? place.item?.name}
                     </span>
                   )}
+
+                  {/* Menge / Kapazität */}
                   <span className="text-muted ms-0">
                     {quantityLabel}/{capacityLabel} ({placeUtil}%)
                   </span>
@@ -196,6 +230,8 @@ function ZoneRow({ zone, onAddPlace, onAssignItem }) {
           <span className="text-muted">Keine Plätze</span>
         )}
       </td>
+
+      {/* Zone-Auslastung */}
       <td>
         <div className="small">
           <div className="fw-semibold">{zoneUtil}%</div>
@@ -204,6 +240,8 @@ function ZoneRow({ zone, onAddPlace, onAssignItem }) {
           </div>
         </div>
       </td>
+
+      {/* Status */}
       <td>
         {places.some(p => (p.quantity || 0) > 0) ? (
           <span className="badge bg-success bg-opacity-10 text-success border border-success">

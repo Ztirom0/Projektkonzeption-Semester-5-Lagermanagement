@@ -1,5 +1,5 @@
 // src/components/Navigation.jsx
-
+// Steuert Navigation, aktives Menü und Sidebar‑Zustand 
 import { useState } from "react";
 
 export default function Navigation({ onNavigate }) {

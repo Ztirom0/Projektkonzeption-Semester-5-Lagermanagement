@@ -1,18 +1,19 @@
 // src/components/AlertsPanel.jsx
+// Panel für Bestandswarnungen: sortiert, farblich markiert, klickbar
 
 export default function AlertsPanel({ alerts, onClose, onItemClick }) {
-  // Sortiere Alerts: CRITICAL (rot) zuerst, dann WARNING (gelb)
+  // Sortiert Alerts nach Schweregrad: CRITICAL → WARNING → Rest
   const sortedAlerts = [...alerts].sort((a, b) => {
     const severityOrder = { CRITICAL: 0, WARNING: 1 };
-    const aSeverity = severityOrder[a.type] ?? 2;
-    const bSeverity = severityOrder[b.type] ?? 2;
-    return aSeverity - bSeverity;
+    return (severityOrder[a.type] ?? 2) - (severityOrder[b.type] ?? 2);
   });
 
+  // Farb-Logik für Badge basierend auf Alert-Typ oder Statuslabel
   const getBadgeColor = (alert) => {
     if (alert.type === "CRITICAL" || alert.statusLabel === "Unterschreitung") {
       return "bg-danger";
-    } else if (alert.type === "WARNING" || alert.statusLabel === "Läuft aus") {
+    }
+    if (alert.type === "WARNING" || alert.statusLabel === "Läuft aus") {
       return "bg-warning text-dark";
     }
     return "bg-secondary";
@@ -21,34 +22,46 @@ export default function AlertsPanel({ alerts, onClose, onItemClick }) {
   return (
     <div className="alerts-panel-container">
       <div className="alerts-panel">
+
+        {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h5 className="m-0">Warnungen & Empfehlungen</h5>
           <button className="btn-close" onClick={onClose}></button>
         </div>
 
+        {/* Keine Alerts */}
         {sortedAlerts.length === 0 ? (
           <div className="text-muted text-center py-3">
             Keine Warnungen vorhanden.
           </div>
         ) : (
           <div className="alerts-list">
+
+            {/* Alert-Karten */}
             {sortedAlerts.map((a, idx) => (
-              <div 
-                key={idx} 
-                className={`alert-card ${a.type === "CRITICAL" ? "alert-critical" : "alert-warning"}`}
+              <div
+                key={idx}
+                className={`alert-card ${
+                  a.type === "CRITICAL" ? "alert-critical" : "alert-warning"
+                }`}
                 onClick={() => onItemClick?.(a)}
               >
                 <div className="alert-card-header">
-                  <div className="alert-item-name">{a.itemName ?? a.itemId}</div>
+                  <div className="alert-item-name">
+                    {a.itemName ?? a.itemId}
+                  </div>
+
                   <span className={`badge ${getBadgeColor(a)}`}>
                     {a.statusLabel ?? a.message ?? a.alert ?? "Unterschreitung"}
                   </span>
                 </div>
+
                 <div className="alert-card-body">
                   <div className="alert-stat">
                     <span className="alert-label">Bestand:</span>
                     <span className="alert-value">{a.quantity}</span>
                   </div>
+
                   <div className="alert-stat">
                     <span className="alert-label">Minimum:</span>
                     <span className="alert-value">{a.minQuantity}</span>
@@ -56,10 +69,12 @@ export default function AlertsPanel({ alerts, onClose, onItemClick }) {
                 </div>
               </div>
             ))}
+
           </div>
         )}
       </div>
 
+      {/* Styles */}
       <style>{`
         .alerts-panel-container {
           position: fixed;
@@ -77,7 +92,7 @@ export default function AlertsPanel({ alerts, onClose, onItemClick }) {
 
         @keyframes slideIn {
           from { transform: translateX(100%); }
-          to { transform: translateX(0); }
+          to   { transform: translateX(0); }
         }
 
         .alerts-list {
@@ -109,14 +124,6 @@ export default function AlertsPanel({ alerts, onClose, onItemClick }) {
         .alert-card:hover {
           transform: translateX(-2px);
           box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .alert-card.alert-critical:hover {
-          box-shadow: 0 2px 8px rgba(220,53,69,0.15);
-        }
-
-        .alert-card.alert-warning:hover {
-          box-shadow: 0 2px 8px rgba(255,193,7,0.15);
         }
 
         .alert-card-header {

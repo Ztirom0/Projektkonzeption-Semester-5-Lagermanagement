@@ -1,4 +1,5 @@
 // src/components/Lager/AssignItemToPlaceModal.jsx
+// Modal zum Zuweisen eines Artikels zu einem Lagerplatz
 
 import { useState, useEffect } from "react";
 import CenteredModal from "../UI/CenteredModal";
@@ -6,23 +7,23 @@ import { assignItemToPlace } from "../../api/storageApi";
 import { getAllItems } from "../../api/itemsApi";
 
 export default function AssignItemToPlaceModal({ place, onAssigned, onClose }) {
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState([]);              
   const [selectedItemId, setSelectedItemId] = useState(null);
-  const [quantity, setQuantity] = useState("");
+  const [quantity, setQuantity] = useState("");        
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [loadingItems, setLoadingItems] = useState(true);
 
+  // Artikel laden
   useEffect(() => {
     const loadItems = async () => {
       try {
         const itemList = await getAllItems();
         setItems(itemList || []);
-        if (itemList && itemList.length > 0) {
+        if (itemList?.length > 0) {
           setSelectedItemId(itemList[0].id);
         }
-      } catch (err) {
-        console.error("Fehler beim Laden der Artikel:", err);
+      } catch {
         setError("Fehler beim Laden der Artikel");
       } finally {
         setLoadingItems(false);
@@ -33,27 +34,21 @@ export default function AssignItemToPlaceModal({ place, onAssigned, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedItemId || !quantity) {
-      console.warn("Form invalid: selectedItemId or quantity missing", { selectedItemId, quantity });
-      return;
-    }
+    if (!selectedItemId || !quantity) return;
 
     try {
       setSaving(true);
       setError(null);
 
-      console.log("🔄 Assigning item to place:", { placeId: place.id, itemId: selectedItemId, quantity: Number(quantity) });
-
+      // Artikel dem Platz zuweisen
       const updatedPlace = await assignItemToPlace(place.id, {
         itemId: selectedItemId,
         quantity: Number(quantity)
       });
 
-      console.log("✅ Item assigned successfully:", updatedPlace);
       onAssigned?.(updatedPlace);
       onClose();
-    } catch (err) {
-      console.error("❌ Error assigning item:", err);
+    } catch {
       setError("Fehler beim Zuweisen des Artikels");
     } finally {
       setSaving(false);
@@ -63,12 +58,14 @@ export default function AssignItemToPlaceModal({ place, onAssigned, onClose }) {
   return (
     <CenteredModal title={`Artikel zuweisen – ${place.code}`} onClose={onClose}>
       <form onSubmit={handleSubmit}>
-        {error && (
-          <div className="alert alert-danger py-0">{error}</div>
-        )}
 
+        {/* Fehleranzeige */}
+        {error && <div className="alert alert-danger py-0">{error}</div>}
+
+        {/* Artikelauswahl */}
         <div className="mb-3">
           <label className="form-label">Artikel</label>
+
           {loadingItems ? (
             <p className="text-muted small">Artikel werden geladen...</p>
           ) : items.length > 0 ? (
@@ -90,10 +87,15 @@ export default function AssignItemToPlaceModal({ place, onAssigned, onClose }) {
           )}
         </div>
 
+        {/* Mengenauswahl */}
         {selectedItemId && (
           <div className="mb-3">
-            <label className="form-label">Menge (max. {place.capacity || "∞"})</label>
+            <label className="form-label">
+              Menge (max. {place.capacity || "∞"})
+            </label>
+
             <div className="d-flex gap-2 align-items-center">
+              {/* Slider */}
               <input
                 type="range"
                 className="form-range flex-grow-1"
@@ -103,6 +105,8 @@ export default function AssignItemToPlaceModal({ place, onAssigned, onClose }) {
                 max={place.capacity || 1000}
                 step="1"
               />
+
+              {/* Zahleneingabe */}
               <input
                 type="number"
                 className="form-control"
@@ -110,7 +114,11 @@ export default function AssignItemToPlaceModal({ place, onAssigned, onClose }) {
                 value={quantity}
                 onChange={(e) => {
                   const val = e.target.value;
-                  if (val === "" || (Number(val) >= 1 && Number(val) <= (place.capacity || 1000))) {
+                  if (
+                    val === "" ||
+                    (Number(val) >= 1 &&
+                      Number(val) <= (place.capacity || 1000))
+                  ) {
                     setQuantity(val);
                   }
                 }}
@@ -122,6 +130,7 @@ export default function AssignItemToPlaceModal({ place, onAssigned, onClose }) {
           </div>
         )}
 
+        {/* Buttons */}
         <div className="d-flex justify-content-end gap-0">
           <button
             type="button"
@@ -131,6 +140,7 @@ export default function AssignItemToPlaceModal({ place, onAssigned, onClose }) {
           >
             Abbrechen
           </button>
+
           <button
             type="submit"
             className="btn btn-success"

@@ -1,4 +1,5 @@
 // src/components/DummyHome.jsx
+// Hauptcontainer der App: Navigation, Views, Alerts, globale Modals
 
 import { useState, useEffect } from "react";
 import Navigation from "./Navigation";
@@ -12,6 +13,7 @@ import ProductReportView from "./Reports/ProductReportView";
 
 import AlarmBell from "./AlarmBell";
 import AlertsPanel from "./AlertsPanel";
+
 import { createItem, getAllItems } from "../api/itemsApi";
 import { getInventory, getInventoryHistory } from "../api/inventoryApi";
 import { getSales } from "../api/salesApi";
@@ -20,35 +22,45 @@ import { calculateAllInventoryStatuses } from "../api/inventoryCalculations";
 
 export default function DummyHome() {
   const [view, setView] = useState("dashboard");
+
   const [showAlerts, setShowAlerts] = useState(false);
   const [alerts, setAlerts] = useState([]);
+
   const [items, setItems] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
+
   const [showProductModal, setShowProductModal] = useState(false);
 
+  // Wenn das Alert-Panel geöffnet wird → Alerts neu berechnen
   useEffect(() => {
-    if (showAlerts) {
-      // Lade alle notwendigen Daten und berechne Alerts im Frontend
-      Promise.all([getAllItems(), getInventory(), getSales()])
-        .then(async ([items, inventoryList, sales]) => {
-          const historyPromises = items.map(item =>
-            getInventoryHistory(item.id, 180).catch(() => [])
-          );
-          const historyResults = await Promise.all(historyPromises);
-          const combinedHistory = historyResults.flat();
+    if (!showAlerts) return;
 
-          const statuses = calculateAllInventoryStatuses(items, inventoryList, sales, combinedHistory);
-          const calculatedAlerts = calculateAlerts(statuses);
-          setAlerts(calculatedAlerts);
-        })
-    }
+    Promise.all([getAllItems(), getInventory(), getSales()])
+      .then(async ([items, inventoryList, sales]) => {
+        const historyResults = await Promise.all(
+          items.map(item =>
+            getInventoryHistory(item.id, 180).catch(() => [])
+          )
+        );
+
+        const combinedHistory = historyResults.flat();
+        const statuses = calculateAllInventoryStatuses(
+          items,
+          inventoryList,
+          sales,
+          combinedHistory
+        );
+
+        setAlerts(calculateAlerts(statuses));
+      });
   }, [showAlerts]);
 
+  // Items initial laden
   useEffect(() => {
     getAllItems().then(setItems);
   }, []);
 
-  // Handle navigation from sidebar with modal support
+  // Navigation aus Sidebar
   const handleNavigate = (newView) => {
     if (newView === "products-add") {
       setShowProductModal(true);
@@ -58,19 +70,20 @@ export default function DummyHome() {
   };
 
   return (
-    <div className="app-wrapper" style={{ marginLeft: '300px' }}>
+    <div className="app-wrapper" style={{ marginLeft: "300px" }}>
       <Navigation onNavigate={handleNavigate} />
 
       <div className="main-content">
-        {/* Alarm Bell */}
+
+        {/* Alarmglocke */}
         <div className="d-flex justify-content-end p-3">
           <AlarmBell onOpen={() => setShowAlerts(true)} />
         </div>
 
-        {/* Alerts Panel */}
+        {/* Alert-Panel */}
         {showAlerts && (
-          <AlertsPanel 
-            alerts={alerts} 
+          <AlertsPanel
+            alerts={alerts}
             onClose={() => setShowAlerts(false)}
             onItemClick={(alert) => {
               const itemToShow = items.find(i => i.id === alert.itemId);
@@ -85,12 +98,10 @@ export default function DummyHome() {
 
         <div className="container-fluid py-4">
 
-          {/* DASHBOARD VIEW */}
-          {view === "dashboard" && (
-            <MainDashboard />
-          )}
+          {/* Dashboard */}
+          {view === "dashboard" && <MainDashboard />}
 
-          {/* PRODUCTS VIEWS */}
+          {/* Produktsuche */}
           {view === "products" && (
             <ProductSearchMask
               items={items}
@@ -102,16 +113,17 @@ export default function DummyHome() {
             />
           )}
 
-          {/* LAGER / WAREHOUSE VIEWS */}
+          {/* Lagerübersicht */}
           {view === "lager" && (
             <WarehouseOverview onBack={() => setView("dashboard")} />
           )}
 
-          {/* REPORTS VIEWS */}
+          {/* Reports */}
           {view === "reports" && (
             <ReportsDashboard onBack={() => setView("dashboard")} />
           )}
 
+          {/* Einzelprodukt-Report */}
           {view === "product-report" && (
             <ProductReportView
               item={selectedProduct}
@@ -122,18 +134,18 @@ export default function DummyHome() {
         </div>
       </div>
 
-      {/* MODALS FOR ADD OPERATIONS */}
+      {/* Produkt anlegen */}
       {showProductModal && (
-        <CreateProductModal 
+        <CreateProductModal
           onSave={async (itemData) => {
             const created = await createItem(itemData);
-            setItems((prev) => [created, ...(prev || [])]);
+            setItems(prev => [created, ...(prev || [])]);
             return created;
           }}
           onClose={() => {
             setShowProductModal(false);
-            getAllItems().then(setItems); // Reload items after adding
-          }} 
+            getAllItems().then(setItems); // Items nach Anlage neu laden
+          }}
         />
       )}
 
@@ -143,7 +155,7 @@ export default function DummyHome() {
           min-height: 100vh;
           position: relative;
         }
-        
+
         .main-content {
           flex-grow: 1;
           width: 100%;

@@ -1,4 +1,5 @@
 // src/components/Lager/AssignStorageTypeModal.jsx
+// Modal zum Zuweisen eines Lagertyps zu einem Standort
 
 import { useState } from "react";
 import CenteredModal from "../UI/CenteredModal";
@@ -11,7 +12,7 @@ export default function AssignStorageTypeModal({
   onClose
 }) {
   const [selectedTypeId, setSelectedTypeId] = useState(
-    storageTypes[0]?.id ?? null
+    storageTypes[0]?.id ?? null // Standard: erster Lagertyp
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -23,10 +24,13 @@ export default function AssignStorageTypeModal({
     try {
       setSaving(true);
       setError(null);
+
+      // Lagertyp zuweisen
       await assignStorageTypeToLocation(location.id, selectedTypeId);
+
       onAssigned?.(location.id, selectedTypeId);
       onClose();
-    } catch (err) {
+    } catch {
       setError("Fehler beim Zuweisen des Lagertyps");
     } finally {
       setSaving(false);
@@ -39,10 +43,11 @@ export default function AssignStorageTypeModal({
       onClose={onClose}
     >
       <form onSubmit={handleSubmit}>
-        {error && (
-          <div className="alert alert-danger py-0">{error}</div>
-        )}
 
+        {/* Fehleranzeige */}
+        {error && <div className="alert alert-danger py-0">{error}</div>}
+
+        {/* Auswahl Lagertyp */}
         <div className="mb-3">
           <label className="form-label">Lagertyp</label>
           <select
@@ -60,6 +65,7 @@ export default function AssignStorageTypeModal({
           </select>
         </div>
 
+        {/* Buttons */}
         <div className="d-flex justify-content-end gap-0">
           <button
             type="button"
@@ -69,7 +75,12 @@ export default function AssignStorageTypeModal({
           >
             Abbrechen
           </button>
-          <button type="submit" className="btn btn-success" disabled={saving}>
+
+          <button
+            type="submit"
+            className="btn btn-success"
+            disabled={saving}
+          >
             {saving ? "Speichern..." : "Speichern"}
           </button>
         </div>

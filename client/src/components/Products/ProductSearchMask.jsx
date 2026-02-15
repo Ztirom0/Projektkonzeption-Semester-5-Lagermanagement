@@ -1,7 +1,7 @@
 // src/components/Products/ProductSearch.jsx
+// Produktsuche mit Bestand, Statusberechnung, Filter & Sortierung
 
-import { useState, useMemo } from "react";
-import { useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { getAllItems } from "../../api/itemsApi";
 import { getInventory, getInventoryHistory } from "../../api/inventoryApi";
 import { getSales } from "../../api/salesApi";
@@ -14,6 +14,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
   const [itemsWithInventory, setItemsWithInventory] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Lädt Artikel + Bestände + Verkäufe + Verlauf und berechnet Statusdaten
   useEffect(() => {
     async function load() {
       try {
@@ -22,33 +23,40 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
           getSales()
         ]);
 
-        const itemsRes = itemsProp && itemsProp.length > 0 ? itemsProp : await getAllItems();
+        // Wenn Items über Props kommen → nutzen, sonst API laden
+        const itemsRes =
+          itemsProp && itemsProp.length > 0 ? itemsProp : await getAllItems();
 
-        const historyPromises = itemsRes.map(item =>
-          getInventoryHistory(item.id, 180).catch(() => [])
+        // Verlauf der letzten 180 Tage pro Artikel
+        const historyResults = await Promise.all(
+          itemsRes.map(item =>
+            getInventoryHistory(item.id, 180).catch(() => [])
+          )
         );
-        const historyResults = await Promise.all(historyPromises);
         const combinedHistory = historyResults.flat();
 
-        // Berechne Status für jedes Item
-        const statuses = calculateAllInventoryStatuses(itemsRes, inventory, sales, combinedHistory);
-        
-        // Merge Items mit berechneten Status-Daten
+        // Berechnet: currentQuantity, dailySalesRate, daysRemaining, reorderRecommended
+        const statuses = calculateAllInventoryStatuses(
+          itemsRes,
+          inventory,
+          sales,
+          combinedHistory
+        );
+
+        // Items mit berechneten Statusdaten zusammenführen
         const merged = itemsRes.map(item => {
           const status = statuses.find(s => s.itemId === item.id);
-          const minQuantity = item.minQuantity ?? 0;
-          
           return {
             ...item,
             currentQuantity: status?.currentQuantity ?? 0,
-            minQuantity,
+            minQuantity: item.minQuantity ?? 0,
             dailySalesRate: status?.dailySalesRate ?? 0,
             daysRemaining: status?.daysRemaining ?? 0,
             reorderRecommended: status?.reorderRecommended ?? false
           };
         });
+
         setItemsWithInventory(merged);
-      } catch (err) {
       } finally {
         setLoading(false);
       }
@@ -57,9 +65,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
     load();
   }, [itemsProp]);
 
-
-
-
+  // Filter + Sortierung + Suche
   const filtered = useMemo(() => {
     let result = itemsWithInventory || [];
 
@@ -74,7 +80,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
       );
     }
 
-    // Filterung
+    // Filter
     if (filterType === "low-stock") {
       result = result.filter(item => item.currentQuantity <= item.minQuantity);
     } else if (filterType === "out-of-stock") {
@@ -91,6 +97,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
         case "stock":
           return b.currentQuantity - a.currentQuantity;
         case "min-first":
+          // Produkte unter Mindestbestand zuerst
           return (
             (a.currentQuantity <= a.minQuantity ? 0 : 1) -
             (b.currentQuantity <= b.minQuantity ? 0 : 1)
@@ -99,6 +106,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
           return 0;
       }
     });
+
     return result;
   }, [itemsWithInventory, searchTerm, sortBy, filterType]);
 
@@ -114,7 +122,8 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
 
   return (
     <div className="product-search">
-      {/* Header mit Add-Button */}
+
+      {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h5 className="mb-0">🔍 Produktsuche & Filter</h5>
         <button className="btn btn-primary btn-sm" onClick={onAddNew}>
@@ -122,7 +131,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
         </button>
       </div>
 
-      {/* Suchleiste */}
+      {/* Suchfeld */}
       <div className="mb-4">
         <input
           type="text"
@@ -133,7 +142,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
         />
       </div>
 
-      {/* Filter & Sort */}
+      {/* Filter + Sortierung */}
       <div className="row g-3 mb-4">
         <div className="col-md-6">
           <label className="form-label small fw-semibold">Filter</label>
@@ -147,6 +156,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
             <option value="out-of-stock">Ausverkauft</option>
           </select>
         </div>
+
         <div className="col-md-6">
           <label className="form-label small fw-semibold">Sortierung</label>
           <select
@@ -154,7 +164,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
-            <option value="name">Nach Name (A-Z)</option>
+            <option value="name">Nach Name (A–Z)</option>
             <option value="sku">Nach SKU</option>
             <option value="stock">Nach Bestand (absteigend)</option>
             <option value="min-first">Niedrig Bestand zuerst</option>
@@ -162,7 +172,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
         </div>
       </div>
 
-      {/* Ergebnisse */}
+      {/* Ergebnisliste */}
       {filtered.length > 0 ? (
         <div className="product-results">
           <div className="table-responsive">
@@ -178,23 +188,12 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
                   <th></th>
                 </tr>
               </thead>
+
               <tbody>
                 {filtered.map((item) => {
                   const isBelowMin = item.currentQuantity < item.minQuantity;
-                  const isReorderNeeded = item.reorderRecommended && !isBelowMin;
-
-                  // Debug für MinMenge 30
-                  if (item.minQuantity === 30) {
-                    console.log("[ProductSearch] Item debug:", {
-                      name: item.name,
-                      currentQuantity: item.currentQuantity,
-                      minQuantity: item.minQuantity,
-                      reorderRecommended: item.reorderRecommended,
-                      daysRemaining: item.daysRemaining,
-                      isBelowMin,
-                      isReorderNeeded
-                    });
-                  }
+                  const isReorderNeeded =
+                    item.reorderRecommended && !isBelowMin;
 
                   return (
                     <tr
@@ -208,9 +207,12 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
                       </td>
                       <td>{item.unit}</td>
                       <td>
-                        <span className="badge bg-secondary">{item.currentQuantity}</span>
+                        <span className="badge bg-secondary">
+                          {item.currentQuantity}
+                        </span>
                       </td>
                       <td>{item.minQuantity}</td>
+
                       <td>
                         {isBelowMin ? (
                           <span className="badge bg-danger">🔴 Unterschreitung</span>
@@ -220,6 +222,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
                           <span className="badge bg-success">✓ OK</span>
                         )}
                       </td>
+
                       <td>
                         <button
                           className="btn btn-sm btn-outline-primary"
@@ -237,6 +240,7 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
               </tbody>
             </table>
           </div>
+
           <small className="text-muted d-block mt-3">
             {filtered.length} von {itemsWithInventory?.length || 0} Produkten angezeigt
           </small>
@@ -246,34 +250,30 @@ export default function ProductSearch({ items: itemsProp, onSelect, onAddNew }) 
           {searchTerm ? (
             <>
               <h6>😕 Keine Produkte gefunden</h6>
-              <p className="text-muted mb-3">Versuchen Sie andere Suchbegriffe oder Filter</p>
+              <p className="text-muted mb-3">Suchbegriff oder Filter anpassen</p>
             </>
           ) : (
             <>
               <h6>Keine Produkte vorhanden</h6>
-              <p className="text-muted mb-3">Erstellen Sie das erste Produkt um zu starten</p>
+              <p className="text-muted mb-3">Erstellen Sie das erste Produkt</p>
             </>
           )}
+
           <button className="btn btn-primary btn-sm" onClick={onAddNew}>
             + Produkt hinzufügen
           </button>
         </div>
       )}
 
+      {/* Styles */}
       <style>{`
         .product-search {
           animation: slideIn 0.3s ease-out;
         }
 
         @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
 
         .product-search .form-control:focus,

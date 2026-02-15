@@ -1,8 +1,10 @@
 // src/components/UI/CenteredModal.jsx
+// Einfaches zentriertes Modal mit Overlay und Fade‑In‑Animation
 
 export default function CenteredModal({ title, children, onClose }) {
   return (
     <div
+      // Vollbild-Overlay
       style={{
         position: "fixed",
         inset: 0,
@@ -13,8 +15,10 @@ export default function CenteredModal({ title, children, onClose }) {
         zIndex: 9999,
         backdropFilter: "blur(3px)"
       }}
+      onClick={onClose} // Klick auf Overlay schließt Modal
     >
       <div
+        // Modal-Container
         style={{
           background: "white",
           borderRadius: "12px",
@@ -24,6 +28,7 @@ export default function CenteredModal({ title, children, onClose }) {
           boxShadow: "0 10px 40px rgba(0,0,0,0.25)",
           animation: "fadeIn 0.25s ease"
         }}
+        onClick={(e) => e.stopPropagation()} // Klick im Modal blockiert Schließen
       >
         <h4 style={{ marginBottom: "20px", fontWeight: 600 }}>{title}</h4>
 
@@ -33,7 +38,7 @@ export default function CenteredModal({ title, children, onClose }) {
           {`
             @keyframes fadeIn {
               from { opacity: 0; transform: translateY(-10px); }
-              to { opacity: 1; transform: translateY(0); }
+              to   { opacity: 1; transform: translateY(0); }
             }
           `}
         </style>

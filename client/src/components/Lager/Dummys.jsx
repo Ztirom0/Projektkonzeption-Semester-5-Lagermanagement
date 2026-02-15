@@ -1,4 +1,5 @@
 // src/components/Lager/Dummys.jsx
+// Verwaltung von Lagerorten, Lagertypen, Zonen und Plätzen inkl. Inventarzuweisungen
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -47,7 +48,7 @@ export default function Dummys() {
   const [showEditPlace, setShowEditPlace] = useState(false);
   const [placeToEdit, setPlaceToEdit] = useState(null);
 
-  // Initial laden
+  // Initiales Laden aller Stammdaten
   useEffect(() => {
     const load = async () => {
       try {
@@ -66,6 +67,7 @@ export default function Dummys() {
         setZoneCategories(catRes);
         setInventory(invRes);
 
+        // Automatische Vorauswahl: erster Standort + erster Lagertyp
         const firstLocation = locRes[0] ?? null;
         const firstStorageTypeId =
           firstLocation?.storageTypes?.[0]?.id ??
@@ -75,36 +77,39 @@ export default function Dummys() {
         setSelectedLocationId(firstLocation?.id ?? null);
         setSelectedStorageTypeId(firstStorageTypeId ?? null);
 
+        // Zonen für den ersten Lagertyp laden
         if (firstStorageTypeId) {
           const zones = await getZonesByStorageType(firstStorageTypeId);
-          setZonesByStorageTypeId((prev) => ({
+          setZonesByStorageTypeId(prev => ({
             ...prev,
             [firstStorageTypeId]: zones
           }));
         }
-      } catch (err) {
+      } catch {
         setError("Fehler beim Laden der Lagerdaten");
-      } finally {
       }
     };
 
     load();
   }, []);
 
+  // Aktuell ausgewählter Standort
   const selectedLocation = useMemo(
-    () => locations.find((l) => l.id === selectedLocationId) ?? null,
+    () => locations.find(l => l.id === selectedLocationId) ?? null,
     [locations, selectedLocationId]
   );
 
+  // Zonen des ausgewählten Lagertyps
   const zones = useMemo(() => {
     if (!selectedStorageTypeId) return [];
     return zonesByStorageTypeId[selectedStorageTypeId] ?? [];
   }, [zonesByStorageTypeId, selectedStorageTypeId]);
 
+  // Alle Plätze inkl. Zone‑Infos
   const allPlaces = useMemo(
     () =>
-      zones.flatMap((z) =>
-        (z.places ?? []).map((p) => ({
+      zones.flatMap(z =>
+        (z.places ?? []).map(p => ({
           ...p,
           zoneId: z.id,
           zoneName: z.name
@@ -113,11 +118,13 @@ export default function Dummys() {
     [zones]
   );
 
+  // Inventar-Einträge, die zu den sichtbaren Plätzen gehören
   const itemsForPlaces = useMemo(() => {
-    const placeIds = new Set(allPlaces.map((p) => p.id));
-    return inventory.filter((inv) => placeIds.has(inv.placeId));
+    const placeIds = new Set(allPlaces.map(p => p.id));
+    return inventory.filter(inv => placeIds.has(inv.placeId));
   }, [inventory, allPlaces]);
 
+  // Statistiken für die Übersicht
   const stats = useMemo(() => {
     const locationCount = locations.length;
     const storageTypeCount = locations.reduce(
@@ -129,15 +136,11 @@ export default function Dummys() {
       0
     );
     const placeCount = Object.values(zonesByStorageTypeId).reduce(
-      (s, arr) =>
-        s +
-        arr.reduce((a, z) => a + (z.places?.length ?? 0), 0),
+      (s, arr) => s + arr.reduce((a, z) => a + (z.places?.length ?? 0), 0),
       0
     );
     const itemCount = inventory.length;
-    const criticalCount = inventory.filter(
-      (i) => i.quantity <= i.minQuantity
-    ).length;
+    const criticalCount = inventory.filter(i => i.quantity <= i.minQuantity).length;
 
     return {
       locationCount,
@@ -149,12 +152,13 @@ export default function Dummys() {
     };
   }, [locations, zonesByStorageTypeId, inventory]);
 
+  // Standortwechsel → Lagertyp + Zonen neu laden
   const handleSelectLocation = async (id) => {
     setSelectedLocationId(id);
     setSelectedZoneId(null);
     setSelectedPlaceId(null);
 
-    const loc = locations.find((l) => l.id === id);
+    const loc = locations.find(l => l.id === id);
     const firstTypeId =
       loc?.storageTypes?.[0]?.id ?? loc?.storageTypes?.[0] ?? null;
 
@@ -162,13 +166,14 @@ export default function Dummys() {
 
     if (firstTypeId && !zonesByStorageTypeId[firstTypeId]) {
       const zones = await getZonesByStorageType(firstTypeId);
-      setZonesByStorageTypeId((prev) => ({
+      setZonesByStorageTypeId(prev => ({
         ...prev,
         [firstTypeId]: zones
       }));
     }
   };
 
+  // Lagertypwechsel → Zonen laden
   const handleSelectStorageType = async (typeId) => {
     setSelectedStorageTypeId(typeId);
     setSelectedZoneId(null);
@@ -176,53 +181,51 @@ export default function Dummys() {
 
     if (typeId && !zonesByStorageTypeId[typeId]) {
       const zones = await getZonesByStorageType(typeId);
-      setZonesByStorageTypeId((prev) => ({
+      setZonesByStorageTypeId(prev => ({
         ...prev,
         [typeId]: zones
       }));
     }
   };
 
+  // Standort anlegen
   const handleLocationCreated = (newLocation) => {
-    setLocations((prev) => [...prev, newLocation]);
+    setLocations(prev => [...prev, newLocation]);
   };
 
+  // Lagertyp zu Standort zuweisen
   const handleStorageTypeAssigned = async (locationId, storageTypeId) => {
-    setLocations((prev) =>
-      prev.map((l) =>
+    setLocations(prev =>
+      prev.map(l =>
         l.id === locationId
-          ? {
-              ...l,
-              storageTypes: [
-                ...(l.storageTypes ?? []),
-                storageTypeId
-              ]
-            }
+          ? { ...l, storageTypes: [...(l.storageTypes ?? []), storageTypeId] }
           : l
       )
     );
 
     if (!zonesByStorageTypeId[storageTypeId]) {
       const zones = await getZonesByStorageType(storageTypeId);
-      setZonesByStorageTypeId((prev) => ({
+      setZonesByStorageTypeId(prev => ({
         ...prev,
         [storageTypeId]: zones
       }));
     }
   };
 
+  // Zone anlegen
   const handleZoneCreated = (storageTypeId, newZone) => {
-    setZonesByStorageTypeId((prev) => ({
+    setZonesByStorageTypeId(prev => ({
       ...prev,
       [storageTypeId]: [...(prev[storageTypeId] ?? []), newZone]
     }));
   };
 
+  // Platz anlegen
   const handlePlaceCreated = (zoneId, newPlace) => {
-    setZonesByStorageTypeId((prev) => {
+    setZonesByStorageTypeId(prev => {
       const updated = { ...prev };
-      Object.keys(updated).forEach((key) => {
-        updated[key] = updated[key].map((z) =>
+      Object.keys(updated).forEach(key => {
+        updated[key] = updated[key].map(z =>
           z.id === zoneId
             ? { ...z, places: [...(z.places ?? []), newPlace] }
             : z
@@ -232,8 +235,9 @@ export default function Dummys() {
     });
   };
 
+  // Inventar-Eintrag hinzufügen
   const handleInventoryAssigned = (newEntry) => {
-    setInventory((prev) => [...prev, newEntry]);
+    setInventory(prev => [...prev, newEntry]);
   };
 
   if (loading) {

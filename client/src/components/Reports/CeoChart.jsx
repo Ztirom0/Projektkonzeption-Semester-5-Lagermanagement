@@ -1,12 +1,21 @@
 // src/components/Reports/CeoChart.jsx
-
+// Visualisierung von Verkäufen, Beständen und Forecasts für ein oder mehrere Items
 import { useState, useMemo } from "react";
 import { Line } from "react-chartjs-2";
 import { calculateForecast } from "../../api/forecastApi";
 
 const colors = ["#0066cc", "#28a745", "#dc3545", "#ffc107", "#6f42c1", "#20c997", "#fd7e14", "#17a2b8"];
 
-export default function CeoChart({ sales, inventoryHistory, forecasts, recommendations, items, inventoryStatuses = [], forecastMethod = "moving-average", onMethodChange }) {
+export default function CeoChart({ 
+  sales, 
+  inventoryHistory, 
+  forecasts, 
+  recommendations, 
+  items, 
+  inventoryStatuses = [], 
+  forecastMethod = "moving-average", 
+  onMethodChange 
+}) {
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [method, setMethod] = useState(forecastMethod);
   const [showSales, setShowSales] = useState(true);
@@ -19,15 +28,13 @@ export default function CeoChart({ sales, inventoryHistory, forecasts, recommend
       onMethodChange(newMethod);
     }
   };
-
   const uniqueItems = Array.from(new Set(sales.map(s => s.itemId))).sort();
   const activeItemId = selectedItemId || (uniqueItems.length > 0 ? uniqueItems[0] : null);
   const activeItemIds = activeItemId ? [activeItemId] : [];
-
   if (uniqueItems.length === 0) {
     return <div className="alert alert-info text-center py-5">Keine Verkaufsdaten verfügbar</div>;
   }
-
+  
   // Alle Daten sammeln für das ausgewählte Item
   const getAllDates = () => {
     const allDates = new Set();

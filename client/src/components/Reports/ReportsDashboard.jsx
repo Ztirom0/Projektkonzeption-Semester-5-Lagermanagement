@@ -1,4 +1,5 @@
 // src/components/Reports/ReportsDashboard.jsx
+// Dashboard für Gesamt-Analyse: Verkäufe, Bestand, Forecasts, Empfehlungen
 
 import { useEffect, useState } from "react";
 import {
@@ -19,14 +20,8 @@ import { getInventory, getInventoryHistory } from "../../api/inventoryApi";
 import { calculateAllInventoryStatuses } from "../../api/inventoryCalculations";
 import CeoChart from "./CeoChart";
 
-ChartJS.register(
-  LineElement,
-  PointElement,
-  CategoryScale,
-  LinearScale,
-  Tooltip,
-  Legend
-);
+// ChartJS Setup
+ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 export default function ReportsDashboard({ onBack }) {
   const [sales, setSales] = useState([]);
@@ -39,96 +34,94 @@ export default function ReportsDashboard({ onBack }) {
   const [forecastMethod, setForecastMethod] = useState("moving-average");
   const [loading, setLoading] = useState(true);
 
-// INITIAL LOAD
-useEffect(() => {
-  const load = async () => {
-    setLoading(true);
-    try {
-      // 1. Verkaufsdaten
-      const s = await getSales();
-      setSales(s);
+  // Initialer Datenload: Verkäufe, Items, Bestand, Verlauf, Forecasts, Empfehlungen
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
 
-      // 0. Items + Inventory
-      const [itemsRes, inv] = await Promise.all([
-        getAllItems(),
-        getInventory()
-      ]);
-      console.log("[ReportsDashboard] getInventory() count:", inv?.length || 0);
-      console.log("[ReportsDashboard] getInventory() sample:", (inv || []).slice(0, 10));
-      setItems(itemsRes);
+      try {
+        // Verkäufe
+        const s = await getSales();
+        setSales(s);
 
-      const ids = Array.from(new Set(inv.map(i => i.itemId)));
-      setRealItemIds(ids);
+        // Items + aktueller Bestand
+        const [itemsRes, inv] = await Promise.all([getAllItems(), getInventory()]);
+        setItems(itemsRes);
 
-      // 3. Inventory History laden
-      const historyPromises = ids.map(itemId =>
-        getInventoryHistory(itemId, 180).catch(err => {
-          return [];
-        })
-      );
+        // Nur Items berücksichtigen, die tatsächlich Bestand haben
+        const ids = Array.from(new Set(inv.map(i => i.itemId)));
+        setRealItemIds(ids);
 
-      const historyResults = await Promise.all(historyPromises);
-      const combinedHistory = historyResults.flat();
-      setInventoryHistory(combinedHistory);
+        // Bestandsverlauf der letzten 180 Tage
+        const historyResults = await Promise.all(
+          ids.map(itemId => getInventoryHistory(itemId, 180).catch(() => []))
+        );
+        const combinedHistory = historyResults.flat();
+        setInventoryHistory(combinedHistory);
 
-      // 4. Forecasts berechnen
-      const forecastsData = ids.map(itemId => {
-        try {
-          return calculateForecast(s, combinedHistory, itemId, "moving-average", 30);
-        } catch (err) {
-          return null;
-        }
-      }).filter(f => f !== null);
-      setForecasts(forecastsData);
+        // Forecasts für alle Items
+        const forecastsData = ids
+          .map(itemId => {
+            try {
+              return calculateForecast(s, combinedHistory, itemId, "moving-average", 30);
+            } catch {
+              return null;
+            }
+          })
+          .filter(Boolean);
+        setForecasts(forecastsData);
 
-      // 5. Inventory Status im Frontend berechnen
-      console.log("[ReportsDashboard] calculateAllInventoryStatuses input:", {
-        itemsCount: itemsRes?.length || 0,
-        inventoryCount: inv?.length || 0,
-        salesCount: s?.length || 0,
-        historyCount: combinedHistory?.length || 0
-      });
-      const calculatedStatuses = calculateAllInventoryStatuses(itemsRes, inv, s, combinedHistory);
-      console.log("[ReportsDashboard] inventoryStatuses sample:", (calculatedStatuses || []).slice(0, 10));
-      setInventoryStatuses(calculatedStatuses);
+        // Bestandsstatus berechnen
+        const calculatedStatuses = calculateAllInventoryStatuses(
+          itemsRes,
+          inv,
+          s,
+          combinedHistory
+        );
+        setInventoryStatuses(calculatedStatuses);
 
-      // 6. Empfehlungen im Frontend berechnen
-      const recs = calculateRecommendations(calculatedStatuses, forecastsData, itemsRes);
-      setRecommendations(recs);
+        // Empfehlungen berechnen
+        const recs = calculateRecommendations(calculatedStatuses, forecastsData, itemsRes);
+        setRecommendations(recs);
 
-    } catch (err) {
-    } finally {
-      setLoading(false);
-    }
-  };
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  load();
-}, []);
-
+    load();
+  }, []);
 
   return (
     <div className="reports-dashboard">
+
+      {/* Back Button */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <button className="btn btn-outline-secondary" onClick={onBack}>
           ⬅ Zur Übersicht
         </button>
       </div>
 
+      {/* Ladeanzeige */}
       {loading ? (
         <div className="text-center py-5">
-          <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
+          <div
+            className="spinner-border text-primary"
+            role="status"
+            style={{ width: "3rem", height: "3rem" }}
+          >
             <span className="visually-hidden">Lade Daten...</span>
           </div>
           <p className="mt-3 text-muted">Prognosen werden geladen...</p>
         </div>
       ) : (
         <>
-          {/* Haupt-Chart: CEO View */}
+          {/* CEO‑Chart: Verkäufe, Bestand, Forecasts, Empfehlungen */}
           <div className="mb-5">
-            <CeoChart 
-              sales={sales} 
+            <CeoChart
+              sales={sales}
               inventoryHistory={inventoryHistory}
-              forecasts={forecasts} 
+              forecasts={forecasts}
               recommendations={recommendations}
               items={items}
               inventoryStatuses={inventoryStatuses}
@@ -139,39 +132,50 @@ useEffect(() => {
         </>
       )}
 
-      {/* Prognosekarte */}
+      {/* Bestandsstatus + Empfehlungen */}
       <div className="row g-3 mb-4">
-        {/* Bestandsstatus-Panel */}
+
+        {/* Bestandsstatus */}
         <div className="col-12">
           <div className="card shadow-sm border-0">
             <div className="card-body">
               <h2 className="card-title mb-3">Bestandsstatus & Verfügbarkeit</h2>
+
               {inventoryStatuses.length === 0 ? (
-                <div className="text-muted small">
-                  Keine Status-Daten verfügbar.
-                </div>
+                <div className="text-muted small">Keine Status-Daten verfügbar.</div>
               ) : (
                 <div className="row g-2">
                   {inventoryStatuses.map((status, idx) => {
-                    const icon = status.reorderRecommended ? "⚠️" : "✅";
-                    const statusColor = status.reorderRecommended ? "danger" : "success";
+                    const isLow = status.reorderRecommended;
+                    const color = isLow ? "danger" : "success";
+                    const icon = isLow ? "⚠️" : "✅";
+
                     return (
                       <div className="col-md-4" key={idx}>
-                        <div className={`border rounded p-3 h-100 border-${statusColor}`} 
-                             style={{ backgroundColor: status.reorderRecommended ? "#fff5f5" : "#f5fff5" }}>
+                        <div
+                          className={`border rounded p-3 h-100 border-${color}`}
+                          style={{
+                            backgroundColor: isLow ? "#fff5f5" : "#f5fff5"
+                          }}
+                        >
                           <div className="small text-muted mb-2 fw-bold">
                             {status.itemName} ({status.sku})
                           </div>
+
                           <div className="fw-bold h5 mb-2">
                             {icon} {status.currentQuantity} Stück
                           </div>
+
                           <div className="small mb-2">
-                            <strong>Täglicher Verkauf:</strong> ~{status.dailySalesRate.toFixed(1)} Stück/Tag
+                            <strong>Täglicher Verkauf:</strong>{" "}
+                            ~{status.dailySalesRate.toFixed(1)} Stück/Tag
                           </div>
-                          <div className={`small fw-bold mb-1 text-${statusColor}`}>
+
+                          <div className={`small fw-bold mb-1 text-${color}`}>
                             Verfügbar für: ~{status.daysRemaining} Tage
                           </div>
-                          {status.reorderRecommended && (
+
+                          {isLow && (
                             <div className="small text-danger">
                               🔴 Nachbestellung empfohlen ab: {status.reorderDate}
                             </div>
@@ -190,29 +194,28 @@ useEffect(() => {
         <div className="col-12">
           <div className="card shadow-sm border-0">
             <div className="card-body">
-              <h2 className="card-title mb-3"> Nachbestell-Empfehlungen</h2>
+              <h2 className="card-title mb-3">Nachbestell-Empfehlungen</h2>
+
               {recommendations.length === 0 ? (
-                <div className="text-muted small">
-                  Keine Empfehlungen verfügbar.
-                </div>
+                <div className="text-muted small">Keine Empfehlungen verfügbar.</div>
               ) : (
                 <div className="row g-2">
                   {recommendations.map((r, idx) => {
                     const item = items.find(i => i.id === r.itemId);
-                    const itemName = item ? item.name : `Artikel ${r.itemId}`;
-                    if(r.recommendedQuantity <= 0) return;
+                    if (r.recommendedQuantity <= 0) return null;
+
                     return (
                       <div className="col-md-3" key={idx}>
                         <div className="border rounded p-3 h-100" style={{ backgroundColor: "#f9f9f9" }}>
                           <div className="small text-muted mb-2 fw-bold">
-                            {itemName}
+                            {item ? item.name : `Artikel ${r.itemId}`}
                           </div>
+
                           <div className="fw-bold h5 text-warning mb-1">
                             {r.recommendedQuantity} Stück
                           </div>
-                          <div className="small text-success">
-                            {r.reason}
-                          </div>
+
+                          <div className="small text-success">{r.reason}</div>
                         </div>
                       </div>
                     );
@@ -222,6 +225,7 @@ useEffect(() => {
             </div>
           </div>
         </div>
+
       </div>
 
       <style>{`

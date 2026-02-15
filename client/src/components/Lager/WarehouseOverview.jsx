@@ -1,4 +1,5 @@
 // src/components/Lager/WarehouseOverview.jsx
+// Übersicht aller Standorte inkl. Typen, Zonen und Plätze
 
 import { useState, useEffect } from "react";
 import { getLocations, getZonesByStorageType, getZoneCategories } from "../../api/storageApi";
@@ -11,22 +12,25 @@ import AddPlaceModal from "./AddPlaceModal";
 import AssignItemToPlaceModal from "./AssignItemToPlaceModal";
 
 export default function WarehouseOverview({ onBack }) {
-  const [locations, setLocations] = useState([]);
-  const [zoneCategories, setZoneCategories] = useState([]);
+  const [locations, setLocations] = useState([]);          
+  const [zoneCategories, setZoneCategories] = useState([]); 
   const [expandedLocation, setExpandedLocation] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Modals
   const [showAddLocation, setShowAddLocation] = useState(false);
   const [showAddType, setShowAddType] = useState(false);
   const [showAddZone, setShowAddZone] = useState(false);
   const [showAddPlace, setShowAddPlace] = useState(false);
   const [showAssignItem, setShowAssignItem] = useState(false);
 
+
   const [activeLocation, setActiveLocation] = useState(null);
   const [activeStorageType, setActiveStorageType] = useState(null);
   const [activeZone, setActiveZone] = useState(null);
   const [activePlace, setActivePlace] = useState(null);
 
+  // Daten laden
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -35,6 +39,7 @@ export default function WarehouseOverview({ onBack }) {
           getZoneCategories()
         ]);
 
+        // Lagertypen + Zonen je Standort anreichern
         const enriched = await Promise.all(
           locs.map(async (loc) => {
             const storageTypes = await Promise.all(
@@ -43,37 +48,37 @@ export default function WarehouseOverview({ onBack }) {
                 return { ...type, zones };
               })
             );
-
             return { ...loc, storageTypes };
           })
         );
+
         setLocations(enriched);
         setZoneCategories(cats);
-      } catch (error) {
       } finally {
         setLoading(false);
       }
     };
+
     loadData();
   }, []);
 
+  // Standort hinzufügen
   const handleLocationCreated = (newLocation) => {
     setLocations((prev) => [...prev, { ...newLocation, storageTypes: [] }]);
   };
 
+  // Lagertyp hinzufügen
   const handleStorageTypeCreated = (locationId, newType) => {
     setLocations((prev) =>
       prev.map((loc) =>
         loc.id === locationId
-          ? {
-              ...loc,
-              storageTypes: [...(loc.storageTypes || []), { ...newType, zones: [] }]
-            }
+          ? { ...loc, storageTypes: [...(loc.storageTypes || []), { ...newType, zones: [] }] }
           : loc
       )
     );
   };
 
+  // Zone hinzufügen
   const handleZoneCreated = (storageTypeId, newZone) => {
     setLocations((prev) =>
       prev.map((loc) => ({
@@ -87,6 +92,7 @@ export default function WarehouseOverview({ onBack }) {
     );
   };
 
+  // Platz hinzufügen
   const handlePlaceCreated = (zoneId, newPlace) => {
     setLocations((prev) =>
       prev.map((loc) => ({
@@ -103,6 +109,7 @@ export default function WarehouseOverview({ onBack }) {
     );
   };
 
+  // Artikel zu Platz zugewiesen
   const handleItemAssigned = (updatedPlace) => {
     setLocations((prev) =>
       prev.map((loc) => ({
@@ -120,6 +127,7 @@ export default function WarehouseOverview({ onBack }) {
     );
   };
 
+  // Ladeanzeige
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ height: '60vh' }}>
@@ -132,6 +140,7 @@ export default function WarehouseOverview({ onBack }) {
 
   return (
     <div className="warehouse-overview">
+
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -141,6 +150,7 @@ export default function WarehouseOverview({ onBack }) {
           </h2>
           <p className="text-muted mb-0">Standorte, Typen, Zonen und gelagerte Artikel</p>
         </div>
+
         <button
           className="btn btn-primary shadow-sm"
           onClick={() => setShowAddLocation(true)}
@@ -150,14 +160,14 @@ export default function WarehouseOverview({ onBack }) {
         </button>
       </div>
 
-      {/* Stats Summary */}
+      {/* Statistiken */}
       <WarehouseStats locations={locations} />
 
-      {/* Locations List */}
+      {/* Standortliste */}
       {locations.length === 0 ? (
         <div className="alert alert-light border">
           <i className="bi bi-info-circle me-0 text-primary"></i>
-          Keine Lagerstandorte vorhanden. Erstellen Sie einen neuen Standort über den Button oben rechts.
+          Keine Lagerstandorte vorhanden.
         </div>
       ) : (
         <div className="locations-list">
@@ -166,7 +176,9 @@ export default function WarehouseOverview({ onBack }) {
               key={location.id}
               location={location}
               isExpanded={expandedLocation === location.id}
-              onToggle={() => setExpandedLocation(expandedLocation === location.id ? null : location.id)}
+              onToggle={() =>
+                setExpandedLocation(expandedLocation === location.id ? null : location.id)
+              }
               onAddType={() => {
                 setActiveLocation(location);
                 setShowAddType(true);
@@ -189,6 +201,7 @@ export default function WarehouseOverview({ onBack }) {
         </div>
       )}
 
+      {/* Modals */}
       {showAddLocation && (
         <AddLocationModal
           onCreated={handleLocationCreated}
@@ -230,26 +243,18 @@ export default function WarehouseOverview({ onBack }) {
         />
       )}
 
+      {/* Styles */}
       <style>{`
         .warehouse-overview {
           animation: fadeIn 0.3s ease-in;
         }
-
         @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-
         .card-header:hover {
           background-color: rgba(13, 110, 253, 0.15) !important;
         }
-
         .table-hover tbody tr:hover {
           background-color: rgba(13, 110, 253, 0.05);
         }

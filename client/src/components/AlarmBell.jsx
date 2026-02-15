@@ -1,4 +1,5 @@
 // src/components/AlarmBell.jsx
+// Zeigt eine Glocke mit Badge für kritische Bestandswarnungen
 
 import { useEffect, useState } from "react";
 import { getAllItems } from "../api/itemsApi";
@@ -13,30 +14,41 @@ export default function AlarmBell({ onOpen }) {
   useEffect(() => {
     const load = async () => {
       try {
-        // Lade alle notwendigen Daten
+        // Items, aktueller Bestand und Verkäufe parallel laden
         const [items, inventoryList, sales] = await Promise.all([
           getAllItems(),
           getInventory(),
           getSales()
         ]);
 
-        const historyPromises = items.map(item =>
-          getInventoryHistory(item.id, 180).catch(() => [])
+        // Bestandsverlauf der letzten 180 Tage für jedes Item
+        const historyResults = await Promise.all(
+          items.map(item =>
+            getInventoryHistory(item.id, 180).catch(() => [])
+          )
         );
-        const historyResults = await Promise.all(historyPromises);
         const combinedHistory = historyResults.flat();
-        
-        // Berechne Status im Frontend
-        const statuses = calculateAllInventoryStatuses(items, inventoryList, sales, combinedHistory);
-        
-        // Berechne Alerts im Frontend
+
+        // Statusdaten berechnen (Bestand, Verbrauch, Resttage, etc.)
+        const statuses = calculateAllInventoryStatuses(
+          items,
+          inventoryList,
+          sales,
+          combinedHistory
+        );
+
+        // Alerts basierend auf Statusdaten berechnen
         const calculatedAlerts = calculateAlerts(statuses);
         setAlerts(calculatedAlerts);
-      } catch (err) {
+
+      } catch {
+        // Fehler werden bewusst ignoriert, um UI nicht zu blockieren
       }
     };
 
     load();
+
+    // Regelmäßige Aktualisierung alle 5 Sekunden
     const interval = setInterval(load, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -50,6 +62,8 @@ export default function AlarmBell({ onOpen }) {
       style={{ fontSize: "1.6rem" }}
     >
       🔔
+
+      {/* Badge nur anzeigen, wenn Alerts vorhanden */}
       {count > 0 && (
         <span
           className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
