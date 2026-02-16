@@ -2,13 +2,14 @@ package com.moritz.lagerverwaltungssystem.controller;
 
 import com.moritz.lagerverwaltungssystem.dto.ZoneCategoryDTO;
 import com.moritz.lagerverwaltungssystem.service.ZoneCategoryService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// REST-Endpoint für Zonenkategorien
+// Verwaltet Kategorien zur Klassifizierung von Lagerzonen
 @RestController
-@RequestMapping("/zone-categories")
+@RequestMapping("/api/zone-categories")
 public class ZoneCategoryController {
 
     private final ZoneCategoryService service;
@@ -17,17 +18,15 @@ public class ZoneCategoryController {
         this.service = service;
     }
 
-    // GET /zone-categories
+    // Gibt alle Zonenkategorien zurück (GET /api/zone-categories)
     @GetMapping
-    public ResponseEntity<List<ZoneCategoryDTO>> getAllCategories() {
-        List<ZoneCategoryDTO> categories = service.getAllCategories();
-        return ResponseEntity.ok(categories);
+    public List<ZoneCategoryDTO> getAllCategories() {
+        return service.getAllCategories();
     }
 
-    // POST /zone-categories
+    // Erstellt eine neue Zonenkategorie (POST /api/zone-categories)
     @PostMapping
-    public ResponseEntity<ZoneCategoryDTO> addCategory(@RequestBody ZoneCategoryDTO dto) {
-        ZoneCategoryDTO created = service.addCategory(dto);
-        return ResponseEntity.ok(created);
+    public ZoneCategoryDTO addCategory(@RequestBody ZoneCategoryDTO dto) {
+        return service.addCategory(dto);
     }
 }

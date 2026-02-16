@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+// Service für Zonenkategorien
+// Verwaltet Kategorien zur Klassifizierung von Lagerzonen
 @Service
 public class ZoneCategoryService {
 
@@ -17,6 +19,7 @@ public class ZoneCategoryService {
         this.repository = repository;
     }
 
+    // Gibt alle Zonenkategorien zurück
     public List<ZoneCategoryDTO> getAllCategories() {
         return repository.findAll()
                 .stream()
@@ -24,6 +27,7 @@ public class ZoneCategoryService {
                 .collect(Collectors.toList());
     }
 
+    // Erstellt eine neue Zonenkategorie
     public ZoneCategoryDTO addCategory(ZoneCategoryDTO dto) {
         ZoneCategory category = new ZoneCategory(dto.getName());
         ZoneCategory saved = repository.save(category);

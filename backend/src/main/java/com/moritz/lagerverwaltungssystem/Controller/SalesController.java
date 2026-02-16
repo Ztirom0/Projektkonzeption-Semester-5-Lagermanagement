@@ -2,14 +2,14 @@ package com.moritz.lagerverwaltungssystem.controller;
 
 import com.moritz.lagerverwaltungssystem.dto.SaleDTO;
 import com.moritz.lagerverwaltungssystem.service.SaleService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
+// REST-Endpoint für Verkaufsverwaltung
+// Verwaltet Verkaufsaufzeichnungen
 @RestController
-@RequestMapping("/sales")
+@RequestMapping("/api/sales")
 public class SalesController {
 
     private final SaleService service;
@@ -18,8 +18,9 @@ public class SalesController {
         this.service = service;
     }
 
+    // Gibt alle erfassten Verkäufe zurück (GET /api/sales)
     @GetMapping
-    public ResponseEntity<List<SaleDTO>> getSales() {
-        return ResponseEntity.ok(service.getSales());
+    public List<SaleDTO> getSales() {
+        return service.getSales();
     }
 }

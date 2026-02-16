@@ -1,11 +1,10 @@
 // src/components/Reports/ReportsDashboard.jsx
+// Dashboard für Gesamt-Analyse: Verkäufe, Bestand, Forecasts, Empfehlungen
 
 import { useEffect, useState } from "react";
-import { Line, Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   LineElement,
-  BarElement,
   PointElement,
   CategoryScale,
   LinearScale,
@@ -13,195 +12,178 @@ import {
   Legend
 } from "chart.js";
 
-import {
-  fetchSales,
-  fetchForecast,
-  fetchRecommendations
-} from "./analyticsDummyData";
+import { getSales } from "../../api/salesApi";
+import { calculateForecast } from "../../api/forecastApi";
+import { calculateRecommendations } from "../../api/recommendationsApi";
+import { getAllItems } from "../../api/itemsApi";
+import { getInventory, getInventoryHistory } from "../../api/inventoryApi";
+import { calculateAllInventoryStatuses } from "../../api/inventoryCalculations";
+import CeoChart from "./CeoChart";
 
-import { locations } from "../Lager/storageDummyData";
-
-ChartJS.register(
-  LineElement,
-  BarElement,
-  PointElement,
-  CategoryScale,
-  LinearScale,
-  Tooltip,
-  Legend
-);
+// ChartJS Setup
+ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 export default function ReportsDashboard({ onBack }) {
   const [sales, setSales] = useState([]);
-  const [forecast, setForecast] = useState(null);
+  const [inventoryHistory, setInventoryHistory] = useState([]);
+  const [forecasts, setForecasts] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
-  const [selectedItemId, setSelectedItemId] = useState(null);
+  const [items, setItems] = useState([]);
+  const [realItemIds, setRealItemIds] = useState([]);
+  const [inventoryStatuses, setInventoryStatuses] = useState([]);
+  const [forecastMethod, setForecastMethod] = useState("moving-average");
+  const [loading, setLoading] = useState(true);
 
-  // Echte Artikel-IDs aus dem Lager
-  const realItemIds = Array.from(
-    new Set(
-      locations.flatMap((loc) => loc.items.map((i) => i.productId))
-    )
-  );
-
-  // INITIAL LOAD
+  // Initialer Datenload: Verkäufe, Items, Bestand, Verlauf, Forecasts, Empfehlungen
   useEffect(() => {
     const load = async () => {
-      const s = await fetchSales();
-      setSales(s);
+      setLoading(true);
 
-      const recs = await fetchRecommendations();
-      setRecommendations(recs);
+      try {
+        // Verkäufe
+        const s = await getSales();
+        setSales(s);
 
-      const firstId = realItemIds[0];
-      setSelectedItemId(firstId);
+        // Items + aktueller Bestand
+        const [itemsRes, inv] = await Promise.all([getAllItems(), getInventory()]);
+        setItems(itemsRes);
 
-      if (firstId) {
-        const fc = await fetchForecast(firstId);
-        setForecast(fc);
+        // Nur Items berücksichtigen, die tatsächlich Bestand haben
+        const ids = Array.from(new Set(inv.map(i => i.itemId)));
+        setRealItemIds(ids);
+
+        // Bestandsverlauf der letzten 180 Tage
+        const historyResults = await Promise.all(
+          ids.map(itemId => getInventoryHistory(itemId, 180).catch(() => []))
+        );
+        const combinedHistory = historyResults.flat();
+        setInventoryHistory(combinedHistory);
+
+        // Forecasts für alle Items
+        const forecastsData = ids
+          .map(itemId => {
+            try {
+              return calculateForecast(s, combinedHistory, itemId, "moving-average", 30);
+            } catch {
+              return null;
+            }
+          })
+          .filter(Boolean);
+        setForecasts(forecastsData);
+
+        // Bestandsstatus berechnen
+        const calculatedStatuses = calculateAllInventoryStatuses(
+          itemsRes,
+          inv,
+          s,
+          combinedHistory
+        );
+        setInventoryStatuses(calculatedStatuses);
+
+        // Empfehlungen berechnen
+        const recs = calculateRecommendations(calculatedStatuses, forecastsData, itemsRes);
+        setRecommendations(recs);
+
+      } finally {
+        setLoading(false);
       }
     };
 
     load();
   }, []);
 
-  // FORECAST BEI ARTIKELWECHSEL
-  useEffect(() => {
-    const updateForecast = async () => {
-      if (!selectedItemId) return;
-      const fc = await fetchForecast(selectedItemId);
-      setForecast(fc);
-    };
-
-    updateForecast();
-  }, [selectedItemId]);
-
-  // Labels = einfache Strings
-  const uniqueDates = Array.from(new Set(sales.map((s) => s.date))).sort();
-
-  // Nur echte Artikel
-  const uniqueItems = Array.from(
-    new Set(sales.map((s) => s.itemId))
-  ).sort();
-
-  // LineChart: Verkäufe pro Artikel
-  const salesDatasets = uniqueItems.map((itemId, idx) => {
-    const color = `hsl(${(idx * 80) % 360}, 70%, 50%)`;
-    const dataPerDate = uniqueDates.map((d) => {
-      const entry = sales.find((s) => s.itemId === itemId && s.date === d);
-      return entry ? entry.soldQuantity : 0;
-    });
-
-    return {
-      label: `Artikel ${itemId}`,
-      data: dataPerDate,
-      borderColor: color,
-      backgroundColor: "transparent",
-      tension: 0.3,
-      pointRadius: 3
-    };
-  });
-
-  const salesChartData = {
-    labels: uniqueDates,
-    datasets: salesDatasets
-  };
-
-  const salesChartOptions = {
-    responsive: true,
-    plugins: {
-      legend: { position: "bottom" },
-      tooltip: { mode: "index", intersect: false }
-    },
-    scales: {
-      x: { title: { display: true, text: "Datum" } },
-      y: { title: { display: true, text: "Verkäufe" }, beginAtZero: true }
-    }
-  };
-
-  // BarChart: Empfehlungen
-  const recChartData = {
-    labels: recommendations.map((r) => `Artikel ${r.itemId}`),
-    datasets: [
-      {
-        label: "Empfohlene Nachbestellung",
-        data: recommendations.map((r) => r.recommendedOrder),
-        backgroundColor: "rgba(25, 135, 84, 0.7)"
-      }
-    ]
-  };
-
-  const recChartOptions = {
-    responsive: true,
-    plugins: {
-      legend: { position: "bottom" }
-    },
-    scales: {
-      x: { title: { display: true, text: "Artikel" } },
-      y: { title: { display: true, text: "Menge" }, beginAtZero: true }
-    }
-  };
-
   return (
     <div className="reports-dashboard">
+
+      {/* Back Button */}
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h1 className="h3 mb-1">📊 Prognosen & Analysen</h1>
-          <p className="text-muted mb-0">
-            Verkaufsverläufe, Nachfrageprognosen und intelligente Nachbestell-Empfehlungen.
-          </p>
-        </div>
         <button className="btn btn-outline-secondary" onClick={onBack}>
           ⬅ Zur Übersicht
         </button>
       </div>
 
-      {/* Prognosekarte */}
-      <div className="row g-3 mb-4">
-        <div className="col-md-4">
-          <div className="card shadow-sm border-0 h-100">
-            <div className="card-body">
-              <div className="d-flex justify-content-between align-items-center mb-2">
-                <h5 className="card-title mb-0">Prognose – Artikel</h5>
-                <select
-                  className="form-select form-select-sm"
-                  style={{ width: "140px" }}
-                  value={selectedItemId || ""}
-                  onChange={(e) => setSelectedItemId(Number(e.target.value))}
-                  disabled={uniqueItems.length === 0}
-                >
-                  {uniqueItems.map((id) => (
-                    <option key={id} value={id}>
-                      Artikel {id}
-                    </option>
-                  ))}
-                </select>
-              </div>
+      {/* Ladeanzeige */}
+      {loading ? (
+        <div className="text-center py-5">
+          <div
+            className="spinner-border text-primary"
+            role="status"
+            style={{ width: "3rem", height: "3rem" }}
+          >
+            <span className="visually-hidden">Lade Daten...</span>
+          </div>
+          <p className="mt-3 text-muted">Prognosen werden geladen...</p>
+        </div>
+      ) : (
+        <>
+          {/* CEO‑Chart: Verkäufe, Bestand, Forecasts, Empfehlungen */}
+          <div className="mb-5">
+            <CeoChart
+              sales={sales}
+              inventoryHistory={inventoryHistory}
+              forecasts={forecasts}
+              recommendations={recommendations}
+              items={items}
+              inventoryStatuses={inventoryStatuses}
+              forecastMethod={forecastMethod}
+              onMethodChange={setForecastMethod}
+            />
+          </div>
+        </>
+      )}
 
-              {forecast ? (
-                <>
-                  <div className="mb-2">
-                    <span className="text-muted small">Prognostizierte Nachfrage</span>
-                    <div className="fs-4 fw-bold">
-                      {forecast.predictedDemand} Stück
-                    </div>
-                  </div>
-                  <div className="mb-2">
-                    <span className="text-muted small">Empfohlenes Nachbestelldatum</span>
-                    <div className="fw-semibold">
-                      {forecast.recommendedReorderDate}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-muted small">Konfidenz</span>
-                    <div className="fw-semibold">
-                      {(forecast.confidence * 100).toFixed(1)} %
-                    </div>
-                  </div>
-                </>
+      {/* Bestandsstatus + Empfehlungen */}
+      <div className="row g-3 mb-4">
+
+        {/* Bestandsstatus */}
+        <div className="col-12">
+          <div className="card shadow-sm border-0">
+            <div className="card-body">
+              <h2 className="card-title mb-3">Bestandsstatus & Verfügbarkeit</h2>
+
+              {inventoryStatuses.length === 0 ? (
+                <div className="text-muted small">Keine Status-Daten verfügbar.</div>
               ) : (
-                <div className="text-muted small">
-                  Keine Prognose verfügbar für die aktuellen Artikel.
+                <div className="row g-2">
+                  {inventoryStatuses.map((status, idx) => {
+                    const isLow = status.reorderRecommended;
+                    const color = isLow ? "danger" : "success";
+                    const icon = isLow ? "⚠️" : "✅";
+
+                    return (
+                      <div className="col-md-4" key={idx}>
+                        <div
+                          className={`border rounded p-3 h-100 border-${color}`}
+                          style={{
+                            backgroundColor: isLow ? "#fff5f5" : "#f5fff5"
+                          }}
+                        >
+                          <div className="small text-muted mb-2 fw-bold">
+                            {status.itemName} ({status.sku})
+                          </div>
+
+                          <div className="fw-bold h5 mb-2">
+                            {icon} {status.currentQuantity} Stück
+                          </div>
+
+                          <div className="small mb-2">
+                            <strong>Täglicher Verkauf:</strong>{" "}
+                            ~{status.dailySalesRate.toFixed(1)} Stück/Tag
+                          </div>
+
+                          <div className={`small fw-bold mb-1 text-${color}`}>
+                            Verfügbar für: ~{status.daysRemaining} Tage
+                          </div>
+
+                          {isLow && (
+                            <div className="small text-danger">
+                              🔴 Nachbestellung empfohlen ab: {status.reorderDate}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -209,69 +191,41 @@ export default function ReportsDashboard({ onBack }) {
         </div>
 
         {/* Empfehlungen */}
-        <div className="col-md-8">
-          <div className="card shadow-sm border-0 h-100">
+        <div className="col-12">
+          <div className="card shadow-sm border-0">
             <div className="card-body">
-              <h5 className="card-title mb-3">Nachbestell-Empfehlungen</h5>
+              <h2 className="card-title mb-3">Nachbestell-Empfehlungen</h2>
+
               {recommendations.length === 0 ? (
-                <div className="text-muted small">
-                  Keine Empfehlungen für vorhandene Artikel.
-                </div>
+                <div className="text-muted small">Keine Empfehlungen verfügbar.</div>
               ) : (
                 <div className="row g-2">
-                  {recommendations.map((r, idx) => (
-                    <div className="col-md-4" key={idx}>
-                      <div className="border rounded p-2 h-100">
-                        <div className="small text-muted mb-1">
-                          Artikel {r.itemId}
-                        </div>
-                        <div className="fw-bold">
-                          {r.recommendedOrder} Stück
-                        </div>
-                        <div className="small text-success mt-1">
-                          {r.reason}
+                  {recommendations.map((r, idx) => {
+                    const item = items.find(i => i.id === r.itemId);
+                    if (r.recommendedQuantity <= 0) return null;
+
+                    return (
+                      <div className="col-md-3" key={idx}>
+                        <div className="border rounded p-3 h-100" style={{ backgroundColor: "#f9f9f9" }}>
+                          <div className="small text-muted mb-2 fw-bold">
+                            {item ? item.name : `Artikel ${r.itemId}`}
+                          </div>
+
+                          <div className="fw-bold h5 text-warning mb-1">
+                            {r.recommendedQuantity} Stück
+                          </div>
+
+                          <div className="small text-success">{r.reason}</div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Charts */}
-      <div className="row g-4">
-        <div className="col-md-7">
-          <div className="card shadow-sm border-0 h-100">
-            <div className="card-body">
-              <h5 className="card-title mb-3">Verkaufsverlauf nach Artikel</h5>
-              {salesDatasets.length === 0 ? (
-                <div className="text-muted small">
-                  Keine Verkaufsdaten für vorhandene Artikel.
-                </div>
-              ) : (
-                <Line data={salesChartData} options={salesChartOptions} />
               )}
             </div>
           </div>
         </div>
 
-        <div className="col-md-5">
-          <div className="card shadow-sm border-0 h-100">
-            <div className="card-body">
-              <h5 className="card-title mb-3">Empfohlene Nachbestellungen</h5>
-              {recommendations.length === 0 ? (
-                <div className="text-muted small">
-                  Keine Empfehlungen für vorhandene Artikel.
-                </div>
-              ) : (
-                <Bar data={recChartData} options={recChartOptions} />
-              )}
-            </div>
-          </div>
-        </div>
       </div>
 
       <style>{`

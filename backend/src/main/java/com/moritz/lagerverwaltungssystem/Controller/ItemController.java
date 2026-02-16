@@ -2,13 +2,14 @@ package com.moritz.lagerverwaltungssystem.controller;
 
 import com.moritz.lagerverwaltungssystem.dto.ItemDTO;
 import com.moritz.lagerverwaltungssystem.service.ItemService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// REST-Endpoint für Artikelverwaltung
+// Verwaltet Produkte und deren Eigenschaften
 @RestController
-@RequestMapping("/items")
+@RequestMapping("/api/items")
 public class ItemController {
 
     private final ItemService service;
@@ -17,16 +18,16 @@ public class ItemController {
         this.service = service;
     }
 
-    // GET /items
+    // Gibt alle Artikel zurück (GET /api/items)
     @GetMapping
-    public ResponseEntity<List<ItemDTO>> getAllItems() {
-        return ResponseEntity.ok(service.getAllItems());
+    public List<ItemDTO> getAllItems() {
+        return service.getAllItems();
     }
 
-    // POST /items
+    // Erstellt einen neuen Artikel (POST /api/items)
     @PostMapping
-    public ResponseEntity<ItemDTO> addItem(@RequestBody ItemDTO dto) {
+    public ItemDTO addItem(@RequestBody ItemDTO dto) {
         ItemDTO created = service.addItem(dto);
-        return ResponseEntity.ok(created);
+        return created;
     }
 }

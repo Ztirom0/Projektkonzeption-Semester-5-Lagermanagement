@@ -17,12 +17,8 @@ public class Place {
     @JoinColumn(name = "zone_id")
     private Zone zone;
 
-    // Direktes Item-Objekt statt itemId
-    @ManyToOne
-    @JoinColumn(name = "item_id")
-    private Item item;
-
-    private Integer quantity;
+    @OneToOne(mappedBy = "place")
+    private Inventory inventory;
 
     public Place() {}
 
@@ -43,11 +39,7 @@ public class Place {
     public Zone getZone() { return zone; }
     public void setZone(Zone zone) { this.zone = zone; }
 
-    public Item getItem() { return item; }
-    public void setItem(Item item) { this.item = item; }
-
-    public Integer getQuantity() { return quantity; }
-    public void setQuantity(Integer quantity) { this.quantity = quantity; }
-
+    public Inventory getInventory() { return inventory; }
+    public void setInventory(Inventory inventory) { this.inventory = inventory; }
 }
 

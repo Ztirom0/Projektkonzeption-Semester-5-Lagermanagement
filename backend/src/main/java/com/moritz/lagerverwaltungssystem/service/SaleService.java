@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+// Service für Verkaufsverwaltung
+// Verwaltet Verkaufsaufzeichnungen und Verkaufsdaten
 @Service
 public class SaleService {
 
@@ -16,6 +18,7 @@ public class SaleService {
         this.repository = repository;
     }
 
+    // Gibt alle erfassten Verkäufe zurück
     public List<SaleDTO> getSales() {
         return repository.findAll().stream()
                 .map(s -> new SaleDTO(

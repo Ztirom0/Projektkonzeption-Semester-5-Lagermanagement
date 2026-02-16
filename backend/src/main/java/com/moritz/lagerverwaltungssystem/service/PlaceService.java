@@ -11,82 +11,70 @@ import com.moritz.lagerverwaltungssystem.repository.PlaceRepository;
 import com.moritz.lagerverwaltungssystem.repository.ZoneRepository;
 import org.springframework.stereotype.Service;
 
+// Service für Lagerplatzverwaltung
+// Verwaltet einzelne Lagerplätze und deren Zuordnungen zu Zonen und Artikeln
 @Service
 public class PlaceService {
 
     private final PlaceRepository placeRepository;
     private final ZoneRepository zoneRepository;
     private final ItemRepository itemRepository;
+    private final InventoryService inventoryService;
 
     public PlaceService(PlaceRepository placeRepository,
                         ZoneRepository zoneRepository,
-                        ItemRepository itemRepository) {
+                        ItemRepository itemRepository,
+                        InventoryService inventoryService) {
         this.placeRepository = placeRepository;
         this.zoneRepository = zoneRepository;
         this.itemRepository = itemRepository;
+        this.inventoryService = inventoryService;
     }
 
-    public PlaceDTO assignItemToPlace(Long placeId, PlaceDTO dto) {
-    Place place = placeRepository.findById(placeId)
-            .orElseThrow(() -> new RuntimeException("Place not found"));
+    // Ordnet einen Artikel einem Lagerplatz zu
+    // Erstellt Bestandseintrag über InventoryService
+    public PlaceDTO assignItemToPlace(Long placeId, Long itemId, Integer quantity) {
+        Place place = placeRepository.findById(placeId)
+                .orElseThrow(() -> new RuntimeException("Place not found"));
 
-    // Item aus DB holen
-    Item item = itemRepository.findById(dto.getItem().getId())
-            .orElseThrow(() -> new RuntimeException("Item not found"));
-
-    place.setItem(item);
-    place.setQuantity(dto.getQuantity());
-
-    Place saved = placeRepository.save(place);
-
-    // Entity → DTO konvertieren
-    ItemDTO itemDTO = new ItemDTO(
-            item.getId(),
-            item.getName(),
-            item.getSku(),
-            item.getUnit(),
-            item.getMinQuantity()
-    );
-
-    return new PlaceDTO(
-            saved.getId(),
-            saved.getCode(),
-            saved.getCapacity(),
-            itemDTO,                // hier statt saved.getItem()
-            saved.getQuantity()
-    );
-}
-
-public PlaceDTO addPlace(Long zoneId, PlaceDTO dto) {
-    Zone zone = zoneRepository.findById(zoneId)
-            .orElseThrow(() -> new RuntimeException("Zone not found"));
-
-    Place place = new Place(dto.getCode(), dto.getCapacity(), zone);
-    place.setQuantity(dto.getQuantity());
-
-    // Falls ein Item mitgegeben wird, konvertieren
-    if (dto.getItem() != null) {
-        Item item = itemRepository.findById(dto.getItem().getId())
+        Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new RuntimeException("Item not found"));
-        place.setItem(item);
+
+        // Erstelle Bestandseintrag
+        inventoryService.createInventory(placeId, itemId, quantity);
+
+        // Aktualisiere Lagerplatz mit neuen Bestandsdaten
+        place = placeRepository.findById(placeId).get();
+
+        PlaceDTO result = new PlaceDTO(
+                place.getId(),
+                place.getCode(),
+                place.getCapacity(),
+                item.getId(),
+                item.getName(),
+                quantity
+        );
+
+        System.out.println("✅ Returning PlaceDTO: id=" + result.getId() + ", itemId=" + result.getItemId() + ", itemName=" + result.getItemName());
+
+        return result;
     }
 
-    Place saved = placeRepository.save(place);
+    public PlaceDTO addPlace(Long zoneId, PlaceDTO dto) {
+        Zone zone = zoneRepository.findById(zoneId)
+                .orElseThrow(() -> new RuntimeException("Zone not found"));
 
-    ItemDTO itemDTO = saved.getItem() != null
-            ? new ItemDTO(saved.getItem().getId(),
-                          saved.getItem().getName(),
-                          saved.getItem().getSku(),
-                          saved.getItem().getUnit(),
-                          saved.getItem().getMinQuantity())
-            : null;
+        Place place = new Place(dto.getCode(), dto.getCapacity(), zone);
+        Place saved = placeRepository.save(place);
 
-    return new PlaceDTO(saved.getId(),
-                        saved.getCode(),
-                        saved.getCapacity(),
-                        itemDTO,
-                        saved.getQuantity());
-}
+        return new PlaceDTO(saved.getId(),
+                            saved.getCode(),
+                            saved.getCapacity());
+    }
 
+    // Hilfsmethode: erstellt Lagerplatz
+    public PlaceDTO createPlaceAndAssign(Long zoneId, PlaceDTO dto) {
+        return addPlace(zoneId, dto);
+    }
 
 }
